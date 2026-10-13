@@ -71,15 +71,16 @@
 
 	<section class="board-area" id="boardArea" aria-label="Board">
 		<canvas id="board" role="img"></canvas>
-		<dialog id="lesson">
-			<div class="dlg-head" id="lessonTitle"></div>
-			<div class="dlg-body" id="lessonBody"></div>
-			<div class="dlg-foot"><button class="btn primary" type="button" id="lessonOk">OK</button></div>
-		</dialog>
 	</section>
 
 	<div class="msg none" id="msg" aria-live="polite"></div>
 </main>
+
+<dialog id="lesson">
+	<div class="dlg-head" id="lessonTitle"></div>
+	<div class="dlg-body" id="lessonBody"></div>
+	<div class="dlg-foot"><button class="btn primary" type="button" id="lessonOk">OK</button></div>
+</dialog>
 
 <script src="../shared/site.js"></script>
 <script src="basic.js"></script>

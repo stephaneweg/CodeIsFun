@@ -52,8 +52,8 @@ const WORD_HELP = {
 
 // ---- the concepts' help cards -------------------------------------------------------------------------------------------------
 const CONCEPTS = {
-	move: [['Moving', 'Avancer'], ['The turtle obeys your program, one line after the other.\n\nFORWARD 3 moves it three squares ahead. FORWARD alone: one square.\n\nWrite the instructions, then press Run.',
-		"La tortue obéit à ton programme, une ligne après l'autre.\n\nAVANCER 3 la fait avancer de trois cases. AVANCER seul : une case.\n\nÉcris les instructions, puis appuie sur Lancer."]],
+	move: [['Moving', 'Avancer'], ['The turtle obeys your program, one line after the other.\n\nFORWARD 3 moves it three squares ahead. FORWARD alone: one square.\n\nOne instruction per line: after each one, press Enter to start a new line.\n\n  FORWARD 2\n  FORWARD 1\n\nWrite the instructions, then press Run.',
+		"La tortue obéit à ton programme, une ligne après l'autre.\n\nAVANCER 3 la fait avancer de trois cases. AVANCER seul : une case.\n\nUne seule instruction par ligne : après chacune, appuie sur Entrée pour passer à la ligne suivante.\n\n  AVANCER 2\n  AVANCER 1\n\nÉcris les instructions, puis appuie sur Lancer."]],
 	turn: [['Turning', 'Tourner'], ['LEFT and RIGHT turn the turtle a quarter of a turn, where it stands.\n\nFORWARD then goes the new way. Think as if you were the turtle: its left is not always yours!',
 		"GAUCHE et DROITE font tourner la tortue d'un quart de tour, sur place.\n\nAVANCER part alors dans la nouvelle direction. Mets-toi à la place de la tortue : sa gauche n'est pas toujours la tienne !"]],
 	pick: [['Picking up', 'Ramasser'], ['Coins and keys lie on the floor. Stop on one and write PICK to take it.\n\nA level is won only when every coin is picked.',
@@ -348,6 +348,11 @@ function friendly (lang, line, msg)
 		['Division by zero', 'Line %d: a division by zero.', 'Ligne %d : une division par zéro.'],
 		['Out of stack space', 'Line %d: the word calls itself without end -- does it have a test that stops it?', "Ligne %d : le mot s'appelle lui-même sans fin -- a-t-il un test qui l'arrête ?"]];
 	for (const [k, en, fr] of MAP) if (msg.startsWith (k)) return (lang === LANG_FR ? fr : en).replace ('%d', line);
+	if (msg.startsWith ('Two instructions: '))
+	{
+		const w = msg.slice (18);
+		return T (lang, 'Line %d: careful, you can put only one instruction per line! Put %s on a new line (press Enter before it).', 'Ligne %d : attention, tu ne peux mettre qu\'une instruction par ligne ! Mets %s sur une nouvelle ligne (appuie sur Entrée devant).').replace ('%d', line).replace ('%s', w);
+	}
 	if (msg.startsWith ('Sub or function not defined'))
 	{
 		const name = msg.split (': ')[1] || '';

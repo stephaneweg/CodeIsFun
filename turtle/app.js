@@ -155,6 +155,11 @@ const ORDER = ['repeat', 'for', 'if', 'sensor', 'while', 'maze', 'variable', 'su
 const CONTROL = [['REPEAT', 'REPETER', 0, 'REPEAT 4\n  \nEND REPEAT', 'REPETER 4\n  \nFIN REPETER'], ['FOR', 'POUR', 1, 'FOR i = 1 TO 5\n  \nNEXT', 'POUR i = 1 JUSQUE 5\n  \nSUITE'],
 	['IF', 'SI', 2, 'IF  THEN\n  \nEND IF', 'SI  ALORS\n  \nFIN SI'], ['WHILE', 'TANTQUE', 4, 'WHILE NOT ONGOAL ()\n  \nWEND', 'TANTQUE NON SURBUT ()\n  \nFIN TANTQUE'],
 	['SUB', 'SUB', 7, 'SUB MyWord\n  \nEND SUB', 'SUB MonMot\n  \nFIN SUB'], ['FUNCTION', 'FONCTION', 14, 'FUNCTION MyValue (x)\n  MyValue = x\nEND FUNCTION', 'FONCTION MaValeur (x)\n  MaValeur = x\nFIN FONCTION']];
+// The empty program's reminder: one instruction per line
+function renderPlaceholder ()
+{
+	ed.placeholder = t ("One instruction per line:\nFORWARD 2\nFORWARD 1\n(Enter after each one)", "Une instruction par ligne :\nAVANCER 2\nAVANCER 1\n(Entrée après chacune)");
+}
 function renderChips ()
 {
 	if (!L) return;
@@ -173,8 +178,10 @@ function renderChips ()
 $('chips').addEventListener ('click', (e) =>
 {
 	const b = e.target.closest ('.chip'); if (!b) return;
-	if (b.dataset.c !== undefined) { const c = CONTROL[+b.dataset.c]; insert (Site.lang === 'fr' ? c[4] : c[3]); }
-	else insert (b.textContent + (b.dataset.kind === 'n' ? ' ()' : ' '));
+	const before = ed.value.slice (0, ed.selectionStart), cur = before.slice (before.lastIndexOf ('\n') + 1);
+	const nl = cur.trim () && b.dataset.kind !== 'n' ? '\n' + /^[ \t]*/.exec (cur)[0] : '';
+	if (b.dataset.c !== undefined) { const c = CONTROL[+b.dataset.c]; insert (nl + (Site.lang === 'fr' ? c[4] : c[3])); }
+	else insert (nl + b.textContent + (b.dataset.kind === 'n' ? ' ()' : ' '));
 });
 $('chips').addEventListener ('mousedown', (e) => { if (e.target.closest ('.chip')) e.preventDefault (); });	// (the caret stays)
 
@@ -241,6 +248,7 @@ function message (kind, text, stars, extra)
 {
 	Site.message ($('msg'), kind, text, stars, true);
 	if (extra) $('msg').appendChild (extra);
+	if ((kind === 'err' || kind === 'ok') && Site.isPhone () && $('msg').getBoundingClientRect ().top < 60) $('msg').scrollIntoView ({ block: 'start' });
 }
 function resetView ()
 {
@@ -659,13 +667,13 @@ let ready = false;
 Site.onLang (() =>
 {
 	if (!ready) return;
-	renderPacks (); renderList (); renderCard (); renderChips (); refreshCount (); draw ();
+	renderPacks (); renderList (); renderCard (); renderChips (); renderPlaceholder (); refreshCount (); draw ();
 	if (mode === 'idle') message ('none');
 });
 document.addEventListener ('DOMContentLoaded', () =>
 {
 	ready = true;
-	renderPacks ();
+	renderPacks (); renderPlaceholder ();
 	const levels = packs[pk] ? packs[pk].levels.length : 0;
 	showLevel (pk, Math.min (P.level | 0, Math.max (0, levels - 1)));
 });

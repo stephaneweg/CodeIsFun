@@ -32,10 +32,15 @@ for (const p of window.TURTLE_PACKS)
 }
 // a few errors said right
 const L0 = Turtle.parsePack (window.TURTLE_PACKS[0].text).levels[0];
-for (const [src, want] of [['FORWARD 99', 'Bump'], ['FORWARD\nFOR i = 1 TO 3', 'no NEXT'], ['SUB A\nA\nEND SUB\nA', 'calls itself'], ['WHILE 1\nx = x + 1\nWEND', 'tired'], ['FOO 3', 'do not know'], ['IF 1 THEN', 'END IF']])
+for (const [src, want] of [['FORWARD 99', 'Bump'], ['FORWARD\nFOR i = 1 TO 3', 'no NEXT'], ['SUB A\nA\nEND SUB\nA', 'calls itself'], ['WHILE 1\nx = x + 1\nWEND', 'tired'], ['FOO 3', 'do not know'], ['IF 1 THEN', 'END IF'], ['FORWARD 2 FORWARD', 'only one instruction per line! Put FORWARD'], ['FORWARD FORWARD', 'one instruction per line'],
+	['FORWARD 1: FORWARD 1', 'program ended'], ['IF 1 THEN FORWARD ELSE FORWARD 2', 'program ended'], ['n = 1 m = 2', 'Put m on a new line']])
 {
 	const R = Turtle.runProgram (L0, src, 0, null);
 	if (!R.msg.includes (want)) { console.log ('MSG', JSON.stringify (src), R.result, R.msg); bad++; }
+}
+{
+	const R = Turtle.runProgram (L0, 'avancer 2 avancer', 1, null);
+	if (!R.msg.includes ('attention, tu ne peux mettre qu\'une instruction par ligne ! Mets avancer')) { console.log ('MSG fr', R.msg); bad++; }
 }
 console.log (n + ' levels, ' + bad + ' failure(s)');
 process.exit (bad ? 1 : 0);

@@ -140,7 +140,14 @@ class Parser
 	expectKw (w) { if (!this.isKw (w)) this.err ('Expected ' + w); return this.next (); }
 	expectOp (o) { if (!this.isOp (o)) this.err ('Expected ' + o); return this.next (); }
 	stmtEnd (k = 0) { const t = this.peek (k); return t.t === 'sep' || t.t === 'eol' || t.t === 'eof' || (t.t === 'kw' && t.v === 'ELSE'); }
-	endStmt () { if (!this.stmtEnd ()) this.err (); }
+	// A statement ended: another word after it is a second instruction on the same line
+	endStmt ()
+	{
+		if (this.stmtEnd ()) return;
+		const t = this.peek ();
+		if (t.t === 'id' || t.t === 'kw') throw new BasicError ('Two instructions: ' + t.raw, t.line);
+		this.err ();
+	}
 
 	program ()
 	{
@@ -287,6 +294,9 @@ class Parser
 			this.p = save;
 		}
 		if (letOnly) this.err ();
+		const n = this.peek ();
+		if (n.t === 'id' && this.dialect && this.dialect.words && this.dialect.words[n.v] && this.dialect.words[n.v].kind === 's')
+			throw new BasicError ('Two instructions: ' + n.raw, n.line);	// (FORWARD RIGHT: two words, not a value)
 		const args = this.stmtEnd () ? [] : this.argList (null);
 		this.endStmt ();
 		return { k: 'call', name: id.v, args, line };
