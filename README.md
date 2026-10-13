@@ -12,7 +12,7 @@ en **français** ou en **anglais** :
   (et d'Onyx) sauf les fichiers : `SCREEN` 0 à 13, `PRINT`, `LOCATE`, `COLOR`, `PSET`, `LINE`, `CIRCLE`, `PAINT`,
   `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
   (`BEEP`, `SOUND`, `PLAY`, `NOTEON`), `GOTO`/`GOSUB`, `DATA`/`READ`, `TYPE`, `ON ERROR`… Des exemples, dont
-  l'Arkanoid d'Onyx tel quel. Sur téléphone : un pavé de flèches et le clavier du téléphone pour `INPUT`.
+  l'Arkanoid d'Onyx tel quel et un Space Invaders (`turtle/bas/invaders.bas`). Sur téléphone : un pavé de flèches et le clavier du téléphone pour `INPUT`.
 - **[Circuits](circuits/)** : relie des portes logiques (NON, ET, OU, OUX, NON-ET, NON-OU) jusqu'à ce que les
   lampes suivent la table de vérité. 3 mondes, 20 niveaux, d'un simple fil jusqu'à un additionneur deux bits.
 

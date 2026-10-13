@@ -44,6 +44,16 @@ function run (src, script = [], maxWaits = 4000, lines = [])
 const check = (name, ok, more) => { if (!ok) { bad++; console.log ('FAIL', name, more || ''); } else console.log ('ok  ', name); };
 for (const ex of window.ONYX_EXAMPLES)
 {
+	if (ex.name === 'invaders.bas')
+	{
+		// the title (Space), a wave played: moved, fired again and again, then Esc twice
+		const sc = [[30, ' ']];
+		for (let k = 100; k < 2500; k += 40) sc.push ([k, ' ']);
+		sc.push ([300, 'hold:LEFT'], [500, 'up:LEFT'], [700, 'hold:RIGHT'], [1100, 'up:RIGHT'], [2600, '\x1b'], [2800, '\x1b']);
+		const r = run (ex.text, sc, 8000);
+		check (ex.name, !r.err && r.pc.screen.mode === 13, r.err ? 'line ' + r.err.line + ': ' + r.err.message : 'waits ' + r.waits);
+		continue;
+	}
 	if (ex.name === 'arkanoid.bas')
 	{
 		// the title (a key: Space), a round played with the arrow held, then Esc twice (the title, quit)
