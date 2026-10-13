@@ -13,7 +13,7 @@ en **français** ou en **anglais** :
   `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
   (`BEEP`, `SOUND`, `PLAY`, `NOTEON`), `GOTO`/`GOSUB`, `DATA`/`READ`, `TYPE`, `ON ERROR`, `ON TIMER`, `WAIT &H3DA`… Des exemples, dont
   l'Arkanoid d'Onyx tel quel, un Space Invaders (`turtle/bas/invaders.bas`) et **Amanda 2.7** de Rémi Poulin
-  (2001), l'amie qui parle (`turtle/bas/amanda.bas`, produit par `tools/port-amanda.py` : sa mémoire
+  (2001), l'amie qui parle — avec un nouveau portrait en pixel art qui cligne des yeux, parle et se fâche (`turtle/bas/amanda.bas`, produit par `tools/port-amanda.py` : sa mémoire
   `MEMOIRE.DAT` embarquée en `DATA`). Sur téléphone : un pavé de flèches et le clavier du téléphone pour `INPUT`.
 - **[Circuits](circuits/)** : relie des portes logiques (NON, ET, OU, OUX, NON-ET, NON-OU) jusqu'à ce que les
   lampes suivent la table de vérité. 3 mondes, 20 niveaux, d'un simple fil jusqu'à un additionneur deux bits.

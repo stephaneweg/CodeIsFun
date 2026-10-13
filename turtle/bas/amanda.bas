@@ -10,6 +10,7 @@
 ' the name each time. Its WAIT &H3DA (the screen's retrace) and ON TIMER work as in QBasic.
 ' Three names are Onyx BASIC's French keywords there (REPETER, NON, FIN): the SUBs repeter and non are
 ' called redire and repnon, the variable fin is fini.
+' Her face is new: a portrait in half blocks that blinks and talks (SUB portraitinit and the next ones).
 ' Keys: type a sentence, Enter; F1 help, F2 info, F3 speed, Esc quit.
 DECLARE SUB graphic ()
 DECLARE SUB bienvenue (a$, n$)
@@ -29,6 +30,11 @@ DECLARE SUB verbe (nom, a$, ge$, ge2$, ge3$, lenom$, ve$)
 DECLARE SUB phrase (a$, ge$, ge2$, ge3$, nom, ha())
 DECLARE SUB tempo (a$, te2)
 DECLARE SUB finir (n$)
+DECLARE SUB portraitinit ()
+DECLARE SUB dessine (v, k1, k2, c1, c2)
+DECLARE SUB cligne (ferme)
+DECLARE SUB parle (c$)
+DIM SHARED art$(17, 3), humeur, ouverte   ' (Port: the portrait -- humeur 0 normal, 1 annoyed, 9 hidden)
 
 CLS : SCREEN 0: COLOR 7, 6
 RANDOMIZE TIMER
@@ -36,6 +42,7 @@ FOR s = 1 TO 40: WAIT &H3DA, 8: WAIT &H3DA, 8, 8: NEXT s
 n = 12: q = 1: le = 20: y = 0: fo = 1
 DIM ha(21)
 CALL graphic
+CALL portraitinit
 CALL face0(face, tim)
 
 ON ERROR GOTO erreur
@@ -61,6 +68,8 @@ FOR i = fo TO 16: y = y + 2
   LOCATE 10, 21 + y: COLOR 4, 0: PRINT "█"
   LOCATE 10, 23 + y: COLOR 2, 0: PRINT "█"
   COLOR 14, 0
+  clin = clin + 1: IF clin = 24 THEN CALL cligne(1)
+  IF clin > 24 THEN CALL cligne(0): clin = INT(RND * 6)
   x$ = INKEY$: IF x$ <> "" THEN fo = i: y = y - 2: a$ = "": GOTO partir
   FOR s = 1 TO 70 / (le / 4): WAIT &H3DA, 8: WAIT &H3DA, 8, 8: NEXT s
 NEXT i: fo = 1
@@ -70,6 +79,8 @@ FOR i = fo TO 16: y = y - 2
   LOCATE 10, 25 + y: COLOR 4, 0: PRINT "█"
   LOCATE 10, 23 + y: COLOR 2, 0: PRINT "█"
   COLOR 14, 0
+  clin = clin + 1: IF clin = 24 THEN CALL cligne(1)
+  IF clin > 24 THEN CALL cligne(0): clin = INT(RND * 6)
   x$ = INKEY$: IF x$ <> "" THEN fo = i: y = y + 2: a$ = "": GOTO partir
   FOR s = 1 TO 70 / (le / 4): WAIT &H3DA, 8: WAIT &H3DA, 8, 8: NEXT s
 NEXT i: y = 0: fo = 1: lum = 0
@@ -131,6 +142,7 @@ FOR i = 1 TO LEN(a$): ma$ = LCASE$(MID$(a$, i, 1))
  IF ma$ = "a" OR ma$ = "e" OR ma$ = "i" OR ma$ = "o" OR ma$ = "u" OR ma$ = "y" THEN COLOR 7, 0 ELSE COLOR 15, 0
  IF ma$ = "é" OR ma$ = "ê" OR ma$ = "è" OR ma$ = "ë" OR ma$ = "à" OR ma$ = "É" THEN COLOR 7, 0
  PRINT MID$(a$, i, 1); : IF ma$ <> " " THEN SOUND 200, 1 / 10
+ CALL parle(ma$)
  IF ma$ = "." AND MID$(a$, i + 1, 1) = " " THEN FOR s = 1 TO 35: WAIT &H3DA, 8: WAIT &H3DA, 8, 8: NEXT s
  IF ma$ = "," OR ma$ = "!" OR ma$ = "?" THEN FOR s = 1 TO 35: WAIT &H3DA, 8: WAIT &H3DA, 8, 8: NEXT s
  IF i = 60 THEN LOCATE 5, 6: ra = 7
@@ -138,6 +150,7 @@ FOR i = 1 TO LEN(a$): ma$ = LCASE$(MID$(a$, i, 1))
  FOR s = 1 TO 70 / le: WAIT &H3DA, 8: WAIT &H3DA, 8, 8: NEXT s
 NEXT i
 SOUND 200, 0
+CALL parle(" ")
 IF i = 61 THEN ra = 6
 IF i = 131 THEN ra = 7
 FOR s = 1 TO 50: WAIT &H3DA, 8: WAIT &H3DA, 8, 8: NEXT s
@@ -1937,6 +1950,80 @@ DATA "ancetre", 201, "c'est intéressant de connaitre ses ancêtres!"
 DATA "amazone", 202, "j'étais peut-être une amazone dans mon ancienne vie!"
 DATA "*FIN*"
 
+SUB portraitinit
+' Amanda's portrait (Code is Fun, 2026): four pictures of 42 x 18 pixels, one letter a pixel -- 0 normal,
+' 1 annoyed, 2 eyes shut, 3 mouth open (an empty line: the same as in the picture 0). Their colours: the
+' palette's 9, 10, 11 and 13, which Amanda does not use, made skin, gold, shadow and pink.
+PALETTE 9, 39: PALETTE 10, 38: PALETTE 11, 28: PALETTE 13, 53
+art$(0, 0) = ".............hhHHHHHHHHHHHHhh............."
+art$(1, 0) = "...........hHHHYYHHHHHHHHYYHHHh..........."
+art$(2, 0) = "..........RRHRRHHHHHHHHHHHHYHHHh.........."
+art$(3, 0) = ".........hRRrRRHHHHHHHHHHHHHHHHHh........."
+art$(4, 0) = ".........HRHHSRSSSHHhhHHSSSSSHHHH........."
+art$(5, 0) = "........hHHHSSkkkkSSSSSSkkkkSSHHHh........"
+art$(6, 0) = "........HHHSSSKKKKSSSSSSKKKKSSSHHH........"
+art$(7, 0) = "........HHHSSSWEEWSSSSSSWEEWSSSHHH........"
+art$(8, 0) = "........HHHsSSSSSSSSSSSSSSSSSSsHHH........"
+art$(9, 0) = "........HHHsSSSSSSSSssSSSSSSSSsHHH........"
+art$(10, 0) = ".......hHHHHsSSSSSLSSSSLSSSSSsHHHHh......."
+art$(11, 0) = ".......HHHHHhsSSSSSLLLLSSSSSshHHHHH......."
+art$(12, 0) = ".......HHHHHHhsSSSSSSSSSSSSshHHHHHH......."
+art$(13, 0) = ".......HHHHHHHhssSSSSSSSSsshHHHHHHH......."
+art$(14, 0) = "......hHHHHHHHhhhhsSSSSshhhhHHHHHHHh......"
+art$(15, 0) = "......HHHHHHHCCCCCCcSScCCCCCCHHHHHHH......"
+art$(16, 0) = "......HHHHHCCCCCCCCCccCCCCCCCCCHHHHH......"
+art$(17, 0) = "......HHHCCCCCCCCCCCCCCCCCCCCCCCCHHH......"
+art$(5, 1) = "........hHHHSSkkkSSSSSSSSkkkSSHHHh........"
+art$(6, 1) = "........HHHSSSKKKkSSSSSSkKKKSSSHHH........"
+art$(8, 1) = "........HHHsSBBSSSSSSSSSSSSBBSsHHH........"
+art$(10, 1) = ".......hHHHHsSSSSSSLLLLSSSSSSsHHHHh......."
+art$(11, 1) = ".......HHHHHhsSSSSLSSSSLSSSSshHHHHH......."
+art$(6, 2) = "........HHHSSSSSSSSSSSSSSSSSSSSHHH........"
+art$(7, 2) = "........HHHSSSKKKKSSSSSSKKKKSSSHHH........"
+art$(10, 3) = ".......hHHHHsSSSSSSLLLLSSSSSSsHHHHh......."
+art$(11, 3) = ".......HHHHHhsSSSSSKKKKSSSSSshHHHHH......."
+END SUB
+
+SUB dessine (v, k1, k2, c1, c2)
+' draws the character rows k1 to k2 (0 to 8) and the columns c1 to c2 (0 to 41) of the picture v: each cell
+' holds two pixels, the upper one the foreground of a ▀, the lower one its background
+' (the cursor is put back where it was: Amanda may be writing her answer)
+r = CSRLIN: c = POS(0)
+FOR k = k1 TO k2
+  h$ = art$(2 * k, v): IF h$ = "" THEN h$ = art$(2 * k, 0)
+  b$ = art$(2 * k + 1, v): IF b$ = "" THEN b$ = art$(2 * k + 1, 0)
+  LOCATE 14 + k, 4 + c1
+  FOR x = c1 + 1 TO c2 + 1
+    ch = INSTR("0123456789ABCDEF", MID$("5A69B60F1CDDC3FE", INSTR(".HhSskKWELBRrCcY", MID$(h$, x, 1)), 1)) - 1
+    cb = INSTR("0123456789ABCDEF", MID$("5A69B60F1CDDC3FE", INSTR(".HhSskKWELBRrCcY", MID$(b$, x, 1)), 1)) - 1
+    IF ch = cb THEN
+      COLOR ch, 0: PRINT CHR$(219);
+    ELSEIF ch < 8 AND cb > 7 THEN
+      COLOR cb, ch: PRINT CHR$(220);
+    ELSE
+      COLOR ch, cb: PRINT CHR$(223);
+    END IF
+  NEXT x
+NEXT k
+LOCATE r, c
+END SUB
+
+SUB cligne (ferme)
+' the eyes shut (ferme = 1) or open -- only on the normal face, not over the help
+IF humeur <> 0 THEN EXIT SUB
+IF ferme THEN CALL dessine(2, 3, 3, 14, 27) ELSE CALL dessine(0, 3, 3, 14, 27)
+COLOR 14, 0   ' (the colour of what is typed)
+END SUB
+
+SUB parle (c$)
+' the mouth open on a vowel, shut on the rest, as she writes her answer
+IF humeur > 1 THEN EXIT SUB
+o = 0: IF c$ <> "" THEN IF INSTR("aeiouyàâéèêëîïôûù", c$) THEN o = 1
+IF o = ouverte THEN EXIT SUB
+ouverte = o
+IF o THEN CALL dessine(3, 5, 5, 18, 23) ELSE CALL dessine(humeur, 5, 5, 18, 23)
+END SUB
+
 SUB accent (lp, m$)
   
 FOR i = 1 TO lp: md$ = MID$(m$, i, 1)
@@ -1956,6 +2043,7 @@ END SUB
 
 SUB aide (tim, face)
 
+COLOR 0, 5: LOCATE 14, 4: PRINT SPACE$(42)   ' (Port: the portrait's top row)
 COLOR 2, 5: LOCATE 15, 5: PRINT "             Un peu d'aide!              "
 COLOR 1, 5: LOCATE 16, 10: PRINT ">=--------------------------=<"
 LOCATE 17, 5: PRINT "                                         "
@@ -1964,7 +2052,7 @@ LOCATE 19, 5: PRINT "ou trop compliquées.                     "
 LOCATE 20, 5: PRINT "Les accents ne sont pas obligatoire.     "
 LOCATE 21, 5: PRINT "Écrire les mots et les phrases sans      "
 LOCATE 22, 5: PRINT "faire d'erreur.  "; : COLOR 7, 5: PRINT "Exemple: quel age as-tu "
-tim = 0: face = 0
+tim = 0: face = 0: humeur = 9
 
 END SUB
 
@@ -1998,31 +2086,14 @@ END SUB
 SUB face0 (face, tim)
 
 IF tim = 1 THEN tim = 0: EXIT SUB
-LOCATE 14, 4: COLOR 14, 5: PRINT "                                          "
-LOCATE 15, 4: COLOR 14, 5: PRINT "                   ____                   "
-LOCATE 16, 4: COLOR 14, 5: PRINT "                  //)(\\                  "
-LOCATE 17, 4: COLOR 14, 5: PRINT "                 ////\\\\                 "
-LOCATE 18, 4: COLOR 14, 5: PRINT "                //"; : COLOR 7, 3: PRINT "█"; : COLOR 1, 7: PRINT "@"; : COLOR 7, 5: PRINT "██"; : COLOR 1, 7: PRINT "@"; : COLOR 7, 5: PRINT "█"; : COLOR 14, 5: PRINT "\\                "
-LOCATE 19, 4: COLOR 14, 5: PRINT "               //"; : COLOR 7, 5: PRINT "0██"; : COLOR 6, 7: PRINT "()"; : COLOR 7, 5: PRINT "██0"; : COLOR 14, 5: PRINT "\\               "
-LOCATE 20, 4: COLOR 14, 5: PRINT "              ///"; : COLOR 15, 5: PRINT "¡"; : COLOR 7, 5: PRINT "█"; : COLOR 12, 7: PRINT "\__/"; : COLOR 7, 5: PRINT "█"; : COLOR 15, 5: PRINT "¡"; : COLOR 14, 5: PRINT "\\\              "
-LOCATE 21, 4: COLOR 14, 5: PRINT "              /// "; : COLOR 7, 5: PRINT "▀████▀ "; : COLOR 14, 5: PRINT "\\\              "
-LOCATE 22, 4: COLOR 14, 5: PRINT "              /\"; : COLOR 4, 5: PRINT "║████████║"; : COLOR 14, 5: PRINT "/\              "
+humeur = 0: ouverte = 0: CALL dessine(0, 0, 8, 0, 41)   ' (Port: the portrait)
 face = 8
 
 END SUB
 
 SUB face1 (face, tim)
 
-LOCATE 14, 4: COLOR 14, 5: PRINT "                                          "
-LOCATE 15, 4: COLOR 14, 5: PRINT "                   ____                   "
-LOCATE 16, 4: COLOR 14, 5: PRINT "                  //)(\\                  "
-LOCATE 17, 4: COLOR 14, 5: PRINT "                 ////\\\\                 "
-LOCATE 18, 4: COLOR 14, 5: PRINT "                //"; : COLOR 7, 3: PRINT "█"; : COLOR 0, 7: PRINT "o"; : COLOR 7, 5: PRINT "██"; : COLOR 0, 7: PRINT "o"; : COLOR 7, 5: PRINT "█"; : COLOR 14, 5: PRINT "\\                "
-LOCATE 19, 4: COLOR 14, 5: PRINT "               //"; : COLOR 7, 5: PRINT "0"; : COLOR 8, 7: PRINT "#"; : COLOR 7, 5: PRINT "█"; : COLOR 6, 7: PRINT "()"; : COLOR 7, 5: PRINT "█"; : COLOR 8, 7: PRINT "#"; : COLOR 7, 5: PRINT "0";
-COLOR 14, 5: PRINT "\\               "
-LOCATE 20, 4: COLOR 14, 5: PRINT "              ///"; : COLOR 15, 5: PRINT "¡"; : COLOR 7, 5: PRINT "█"; : COLOR 12, 7: PRINT "/--\"; : COLOR 7, 5: PRINT "█"; : COLOR 15, 5: PRINT "¡"; : COLOR 14, 5: PRINT "\\\              "
-LOCATE 21, 4: COLOR 14, 5: PRINT "              /// "; : COLOR 7, 5: PRINT "▀████▀ "; : COLOR 14, 5: PRINT "\\\              "
-LOCATE 22, 4: COLOR 14, 5: PRINT "              /\"; : COLOR 4, 5: PRINT "║████████║"; : COLOR 14, 5: PRINT "/\              "
+humeur = 1: ouverte = 0: CALL dessine(1, 0, 8, 0, 41)   ' (Port: the portrait)
 face = 0: tim = 0
 
 END SUB
@@ -2236,6 +2307,7 @@ END SUB
 
 SUB info (tim, face)
 
+COLOR 0, 5: LOCATE 14, 4: PRINT SPACE$(42)   ' (Port: the portrait's top row)
 COLOR 2, 5: LOCATE 15, 5: PRINT "             Un peu d'info!              "
 COLOR 1, 5: LOCATE 16, 10: PRINT ">=--------------------------=<"
 LOCATE 17, 5: PRINT "                                         "
@@ -2244,7 +2316,7 @@ COLOR 7, 5: LOCATE 19, 5: PRINT "Version 2.7   "; : COLOR 3, 5: PRINT "("; : COL
 COLOR 3, 5: LOCATE 20, 5: PRINT "Ce programme sera peut-être amélioré!    "
 COLOR 7, 5: LOCATE 21, 5: PRINT "www.angelfire.com/trek/amanda            "
 LOCATE 22, 5: PRINT "                                         "
-tim = 0: face = 0
+tim = 0: face = 0: humeur = 9
 
 END SUB
 
@@ -2320,6 +2392,7 @@ END SUB
 SUB optionv (le, tim, face, a$, nom)
 
 options:
+COLOR 0, 5: LOCATE 14, 4: PRINT SPACE$(42)   ' (Port: the portrait's top row)
 COLOR 2, 5: LOCATE 15, 5: PRINT "           Option de vitesse!            "
 COLOR 1, 5: LOCATE 16, 10: PRINT ">=--------------------------=<"
 LOCATE 17, 5: PRINT "                                         "
@@ -2333,7 +2406,7 @@ z$ = INKEY$: IF z$ = "" THEN GOTO bo
 IF z$ = "+" AND le < 40 THEN le = le + 1: GOTO options
 IF z$ = "-" AND le > 1 THEN le = le - 1: GOTO options
 IF ASC(z$) <> 13 THEN GOTO bo:
-tim = 0: face = 0: a$ = "ah, te revoilà"
+humeur = 9: tim = 0: face = 0: a$ = "ah, te revoilà"
 nom = 0
 
 END SUB
