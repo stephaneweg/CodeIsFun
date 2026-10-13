@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Circuits · Code is Fun</title>
+<meta name="description" content="Learn how a computer computes: wire logic gates until the lamps match the truth table. 20 levels, from one wire to a two-bit adder.">
+<meta name="theme-color" content="#FFFDF8">
+<link rel="icon" href="../shared/circuits.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../shared/site.css">
+<link rel="stylesheet" href="circuits.css">
+</head>
+<body class="has-bar">
+<header class="top">
+	<a class="brand" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#2F7F93"/><path d="M9 11l-4 5 4 5M23 11l4 5-4 5M18 8l-4 16" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Code is Fun</span></a>
+	<button class="btn small levels-btn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="lbl" data-en="Levels" data-fr="Niveaux">Levels</span> <span class="pack-stars"></span></button>
+	<div class="game-name">Circuits</div>
+	<div class="lang" role="group" aria-label="Language / Langue"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+
+<main class="cq">
+	<nav class="levels" aria-label="Levels">
+		<div class="levels-head">
+			<strong class="head-title" data-en="Levels" data-fr="Niveaux">Levels</strong>
+			<button class="btn icon open-pack" type="button" data-en-label="Open a pack of levels (.circuits)" data-fr-label="Ouvrir un recueil de niveaux (.circuits)"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+			<button class="btn icon close" type="button" data-en-label="Close" data-fr-label="Fermer">✕</button>
+		</div>
+		<ol id="levelList"></ol>
+		<input type="file" id="packFile" accept=".circuits,text/plain" hidden>
+	</nav>
+	<div class="scrim"></div>
+
+	<section class="level-card compact" id="card">
+		<div class="card-text">
+			<h1 id="lvTitle"></h1>
+			<p class="text" id="lvText"></p>
+			<button class="more" type="button" id="lvMore" data-en="More" data-fr="Plus">More</button>
+			<p class="hint" id="lvHint" hidden></p>
+		</div>
+		<div class="card-btns">
+			<button class="btn small" type="button" id="btHint" data-en="Hint" data-fr="Indice">Hint</button>
+			<button class="btn small" type="button" id="btLesson" data-en="Lesson" data-fr="Leçon">Lesson</button>
+		</div>
+	</section>
+
+	<div class="palette" id="palette" role="toolbar" aria-label="Gates">
+		<div class="tools" id="tools"></div>
+		<span class="no-gate" id="noGate" data-en="No gate in this level: a wire is enough." data-fr="Pas de porte ici : un fil suffit.">No gate in this level: a wire is enough.</span>
+		<div class="edit">
+			<button class="btn icon" type="button" id="btDel" data-en-label="Delete (Del)" data-fr-label="Supprimer (Suppr)"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+			<button class="btn icon" type="button" id="btUndo" data-en-label="Undo (Ctrl+Z)" data-fr-label="Annuler (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+			<button class="btn icon" type="button" id="btRedo" data-en-label="Redo (Ctrl+Y)" data-fr-label="Rétablir (Ctrl+Y)"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+		</div>
+	</div>
+
+	<section class="board-area" id="boardArea">
+		<canvas id="board" aria-label="Board"></canvas>
+		<p class="rotate-tip" id="rotateTip" hidden><span data-en="Turn your phone for a bigger board." data-fr="Tourne ton téléphone pour un plus grand plateau.">Turn your phone for a bigger board.</span> <button type="button" class="btn small" id="rotateOk">OK</button></p>
+	</section>
+
+	<div class="msg none" id="msg" aria-live="polite"></div>
+
+	<aside class="bench" id="bench">
+		<div class="bench-table">
+			<h2 data-en="Truth table" data-fr="Table de vérité">Truth table</h2>
+			<div class="table-wrap"><table id="table"></table></div>
+		</div>
+		<div class="bench-side">
+			<div class="count" id="count"></div>
+			<p class="mode" id="mode"></p>
+			<div class="sim" id="sim">
+				<button class="btn" type="button" id="btStep"><svg viewBox="0 0 24 24"><path d="M4 5h3v14H4zM9 4l12 8-12 8z" fill="currentColor"/></svg><span data-en="Step" data-fr="Pas à pas">Step</span></button>
+				<button class="btn" type="button" id="btReset" disabled><svg viewBox="0 0 24 24"><path d="M5 4h3v16H5zM20 4L9 12l11 8z" fill="currentColor"/></svg><span data-en="Reset" data-fr="Au départ">Reset</span></button>
+				<button class="btn primary check" type="button" id="btCheck"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-en="Check" data-fr="Vérifier">Check</span></button>
+			</div>
+		</div>
+	</aside>
+</main>
+
+<dialog id="lesson">
+	<div class="dlg-head" id="lessonTitle"></div>
+	<div class="dlg-body" id="lessonBody"></div>
+	<div class="dlg-foot"><button class="btn primary" type="button" id="lessonOk">OK</button></div>
+</dialog>
+<dialog id="result">
+	<div class="dlg-head ok-head" data-en="Level complete!" data-fr="Niveau réussi !">Level complete!</div>
+	<div class="dlg-body result-body" id="resultBody"></div>
+	<div class="dlg-foot"><button class="btn" type="button" id="resStay"></button><button class="btn primary" type="button" id="resNext" data-en="Next level" data-fr="Niveau suivant">Next level</button></div>
+</dialog>
+
+<script src="../shared/site.js"></script>
+<script src="engine.js"></script>
+<script src="lessons.js"></script>
+<script src="levels.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

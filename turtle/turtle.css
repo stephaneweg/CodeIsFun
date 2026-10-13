@@ -1,0 +1,90 @@
+/* turtle.css -- Turtle Quest's layout: three columns on a desktop (the levels, the program, the level and its board),
+   a drawer and two columns on a tablet, tabs (Program / Board) and a bottom bar on a phone.
+   MIT License -- Copyright (c) 2026 Stéphane Wegener and the Onyx contributors. */
+.tq { display: grid; gap: 14px; padding: 16px var(--gutter); height: calc(100dvh - var(--header));
+	grid-template-columns: 260px minmax(360px, 1fr) minmax(380px, 1.1fr);
+	grid-template-rows: auto auto minmax(0, 1fr) auto;
+	grid-template-areas: "levels code card" "levels code tabs" "levels code board" "levels code msg"; }
+.tq .levels { grid-area: levels; }
+.tq .level-card { grid-area: card; }
+.tq .tabs { grid-area: tabs; display: none; }
+.tq .code-area { grid-area: code; display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+.tq .board-area { grid-area: board; position: relative; min-height: 0; min-width: 0; display: flex; align-items: flex-start; justify-content: center; }
+.tq .msg { grid-area: msg; }
+.tq .msg .btn { flex: none; }
+
+/* the actions */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.actions .btn { flex: 1 1 auto; }
+.actions .speed { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; color: var(--text-2); font-size: 14px; }
+.actions .speed input { flex: 1; accent-color: var(--accent); min-height: 28px; }
+.actions .speed-btn { display: none; flex: none; }
+
+/* the editor: a textarea over its coloured copy */
+.editor { flex: 1; min-height: 220px; display: flex; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--code-bg); }
+.editor .gutter { flex: none; width: 3.2em; padding: 10px 0; background: var(--code-gutter); color: #9A927F; text-align: right; overflow: hidden;
+	font: 15px/1.6 var(--font-code); user-select: none; }
+.editor .gutter div { padding-right: 10px; height: 1.6em; }
+.editor .gutter div.cur { color: #6B4E00; font-weight: 700; }
+.editor .gutter div.bad { color: var(--err); font-weight: 700; }
+.code-wrap { position: relative; flex: 1; min-width: 0; }
+.code-wrap pre, .code-wrap textarea { position: absolute; inset: 0; margin: 0; padding: 10px 12px; border: 0; font: 15px/1.6 var(--font-code);
+	white-space: pre; overflow: auto; tab-size: 4; letter-spacing: 0; word-spacing: 0; }
+.code-wrap pre { color: #2B2A26; pointer-events: none; overflow: hidden; }
+.code-wrap pre .l { display: block; min-height: 1.6em; margin: 0 -12px; padding: 0 12px; min-width: max-content; }
+.code-wrap pre .l.cur { background: var(--code-hl); }
+.code-wrap pre .l.bad { background: var(--code-err); }
+.code-wrap textarea { resize: none; background: transparent; color: transparent; caret-color: #2B2A26; outline: none; }
+.code-wrap textarea::selection { background: rgb(47 127 147 / .25); color: transparent; }
+.code-wrap textarea[readonly] { cursor: default; }
+.editor:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.hl .k { color: var(--kw); font-weight: 700; }
+.hl .c { color: var(--comment); font-style: italic; }
+.hl .s { color: var(--strc); }
+.hl .n { color: var(--numc); }
+
+/* the words the level knows */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 36px; padding: 0 14px; border-radius: var(--r-pill); border: 1px solid var(--chip-word-edge); background: var(--chip-word-bg); color: var(--chip-word-ink);
+	font: 700 13px var(--font-code); cursor: pointer; touch-action: manipulation; }
+.chip.block { border-color: var(--chip-block-edge); background: var(--chip-block-bg); color: var(--chip-block-ink); }
+.chip:hover { filter: brightness(.95); }
+.count { color: var(--text-2); font-size: 14px; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.count .st { color: var(--star); }
+
+/* the board */
+#board { display: block; max-width: 100%; touch-action: manipulation; border-radius: var(--r-md); }
+.board-area dialog { position: fixed; }
+dialog .palette { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 4px 0 12px; }
+dialog .palette span { border-radius: 6px; text-align: center; font: 700 13px var(--font-ui); padding: 4px 0; }
+
+/* the tablet: the levels in a drawer, the card over the program and the board */
+@media (max-width: 1099px) {
+	.tq { height: auto; min-height: calc(100dvh - var(--header)); align-content: start; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto;
+		grid-template-areas: "card card" "tabs tabs" "code board" "code msg"; }
+	.editor { min-height: 360px; }
+	.tq .msg { align-self: start; }
+}
+/* the phone: one pane at a time (Program / Board), the actions in a bar at the bottom */
+@media (max-width: 699px) {
+	.tq { grid-template-columns: minmax(0, 1fr); gap: 10px; padding-top: 10px; grid-template-areas: "card" "tabs" "code" "board" "msg"; }
+	.tq .tabs { display: flex; background: var(--btn-hover); border-radius: var(--r-pill); padding: 3px; }
+	.tabs button { flex: 1; min-height: 38px; border: 0; border-radius: var(--r-pill); background: none; font-weight: 600; cursor: pointer; }
+	.tabs button[aria-selected="true"] { background: var(--surface); box-shadow: var(--shadow); }
+	body[data-pane="code"] .board-area, body[data-pane="board"] .code-area .editor, body[data-pane="board"] .code-area .chips, body[data-pane="board"] .code-area .count { display: none; }
+	body[data-pane="board"] .code-area { display: contents; }
+	.editor { min-height: 46dvh; }
+	.editor .gutter, .code-wrap pre, .code-wrap textarea { font-size: 16px; }
+	.chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+	.chip { flex: none; }
+	.actions { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; flex-wrap: nowrap; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+		background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -4px 14px rgb(60 40 0 / .08); }
+	.actions .btn { flex: 1 1 0; min-height: 44px; padding: 0 6px; font-size: 14px; min-width: 0; }
+	.actions .btn:not(.speed-btn) svg { display: none; }
+	.actions .speed-btn { display: inline-flex; flex: none; width: 44px; }
+	.actions .speed { display: none; position: absolute; left: 16px; right: 16px; bottom: calc(100% + 8px); padding: 12px 16px; background: var(--surface);
+		border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); }
+	.actions.speed-open .speed { display: flex; }
+	body:not(.running) #btStop, body.running #btReset { display: none; }
+}
+

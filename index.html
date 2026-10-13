@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Code is Fun</title>
+<meta name="description" content="Two games to learn to think like a programmer: Turtle Quest (programming a turtle in BASIC) and Circuits (logic gates).">
+<meta name="theme-color" content="#FFFDF8">
+<link rel="icon" href="shared/turtle.svg" type="image/svg+xml">
+<link rel="stylesheet" href="shared/site.css">
+</head>
+<body>
+<header class="top">
+	<a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#2F7F93"/><path d="M9 11l-4 5 4 5M23 11l4 5-4 5M18 8l-4 16" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="display:inline">Code is Fun</span></a>
+	<div class="spacer"></div>
+	<div class="lang" role="group" aria-label="Language / Langue"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+<main class="home">
+	<section class="hero">
+		<h1>Code is Fun</h1>
+		<p data-en="Learn to think like a programmer." data-fr="Apprends à penser comme un programmeur.">Learn to think like a programmer.</p>
+	</section>
+	<section class="games">
+		<a class="panel game-card" href="turtle/">
+			<svg class="thumb" viewBox="0 0 320 200" aria-hidden="true">
+				<rect width="320" height="200" fill="#8CC96B"/>
+				<g fill="#7A8696"><rect x="30" y="40" width="36" height="36" rx="5"/><rect x="70" y="40" width="36" height="36" rx="5"/><rect x="110" y="40" width="36" height="36" rx="5"/><rect x="150" y="40" width="36" height="36" rx="5"/><rect x="190" y="40" width="36" height="36" rx="5"/><rect x="230" y="40" width="36" height="36" rx="5"/><rect x="30" y="80" width="36" height="36" rx="5"/><rect x="230" y="80" width="36" height="36" rx="5"/><rect x="30" y="120" width="36" height="36" rx="5"/><rect x="70" y="120" width="36" height="36" rx="5"/><rect x="110" y="120" width="36" height="36" rx="5"/><rect x="150" y="120" width="36" height="36" rx="5"/><rect x="190" y="120" width="36" height="36" rx="5"/><rect x="230" y="120" width="36" height="36" rx="5"/></g>
+				<rect x="68" y="78" width="160" height="40" fill="#F4EBCD"/>
+				<path d="M88 98H170" stroke="#7FA0D0" stroke-width="5" stroke-linecap="round"/>
+				<g transform="translate(180 98) rotate(90)"><circle cx="-8" cy="-8" r="4" fill="#6FB86A"/><circle cx="8" cy="-8" r="4" fill="#6FB86A"/><circle cx="-8" cy="8" r="4" fill="#6FB86A"/><circle cx="8" cy="8" r="4" fill="#6FB86A"/><circle cx="0" cy="-15" r="5" fill="#7CC576"/><circle r="12" fill="#2F7A35"/><circle r="9" fill="#4FA052"/></g>
+				<path d="M210 85v26" stroke="#5A4632" stroke-width="2"/><path d="M210 85l16 5-16 5z" fill="#E0483E"/>
+				<text x="160" y="186" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-weight="700" font-size="15" fill="#1F55B8">REPEAT 4 · FORWARD 2 · RIGHT</text>
+			</svg>
+			<div class="body">
+				<h2>Turtle Quest</h2>
+				<p data-en="Write BASIC programs that guide a turtle: loops, conditions, variables, your own words, fractals. In English or in French." data-fr="Écris des programmes en BASIC qui guident une tortue : boucles, conditions, variables, tes propres mots, fractales. En anglais ou en français.">Write BASIC programs that guide a turtle.</p>
+				<div class="row"><span class="progress" id="tqProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
+			</div>
+		</a>
+		<a class="panel game-card" href="circuits/">
+			<svg class="thumb" viewBox="0 0 320 200" aria-hidden="true">
+				<rect width="320" height="200" fill="#EEF3EF"/><rect width="56" height="200" fill="#E2EAE4"/><rect x="264" width="56" height="200" fill="#E2EAE4"/>
+				<rect x="18" y="56" width="26" height="22" rx="5" fill="#21A346"/><text x="31" y="72" text-anchor="middle" font-weight="700" font-size="14" fill="#fff" font-family="system-ui,sans-serif">1</text>
+				<rect x="18" y="122" width="26" height="22" rx="5" fill="#F7F4EE" stroke="#B9B2A4"/><text x="31" y="138" text-anchor="middle" font-weight="700" font-size="14" fill="#2B2A26" font-family="system-ui,sans-serif">0</text>
+				<path d="M44 67H100V86H130M44 133H100V114H130" fill="none" stroke-width="4" stroke-linejoin="round" stroke="#21A346"/><path d="M44 133H100V114H130" fill="none" stroke-width="3.5" stroke-linejoin="round" stroke="#334A5E"/>
+				<path d="M128 74Q160 74 182 100Q160 126 128 126Q140 100 128 74Z" fill="#E3F5E7" stroke="#2B3440" stroke-width="3"/><path d="M120 126Q132 100 120 74" fill="none" stroke="#2B3440" stroke-width="3"/>
+				<path d="M182 100H262" stroke="#21A346" stroke-width="4"/>
+				<circle cx="280" cy="100" r="16" fill="#FFD23F" opacity=".35"/><circle cx="280" cy="100" r="11" fill="#FFD23F" stroke="#C99A12" stroke-width="2"/>
+				<text x="155" y="104" text-anchor="middle" font-size="12" fill="#4A5560" font-family="system-ui,sans-serif" font-weight="600">XOR</text>
+			</svg>
+			<div class="body">
+				<h2>Circuits</h2>
+				<p data-en="How does a computer compute? Wire logic gates — NOT, AND, OR, XOR... — until the lamps match the truth table, up to a two-bit adder." data-fr="Comment un ordinateur calcule-t-il ? Relie des portes logiques — NON, ET, OU, OUX... — jusqu'à ce que les lampes suivent la table de vérité, jusqu'à un additionneur.">Wire logic gates until the lamps match the truth table.</p>
+				<div class="row"><span class="progress" id="ciProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
+			</div>
+		</a>
+	</section>
+	<footer>
+		<p><span data-en="Two games from" data-fr="Deux jeux tirés de">Two games from</span> <a href="https://github.com/stephaneweg/onyx">Onyx</a><span data-en=", a homemade operating system for the Raspberry Pi." data-fr=", un système d'exploitation fait maison pour le Raspberry Pi.">, a homemade operating system for the Raspberry Pi.</span></p>
+		<p><span data-en="Your progress stays in this browser." data-fr="Ta progression reste dans ce navigateur.">Your progress stays in this browser.</span> · MIT · <a href="https://github.com/stephaneweg/CodeIsFun">GitHub</a></p>
+	</footer>
+</main>
+<script src="shared/site.js"></script>
+<script>
+// the stars won so far, read from what each game keeps in the browser
+(function () {
+	const sum = (o) => Object.values ((o && o.stars) || {}).reduce ((a, b) => a + (b | 0), 0);
+	const show = () => {
+		const tq = Site.store.get ('codeisfun.turtle', {}), ci = Site.store.get ('codeisfun.circuits', {});
+		document.getElementById ('tqProgress').textContent = '★ ' + sum (tq) + ' / 144';
+		document.getElementById ('ciProgress').textContent = '★ ' + sum (ci) + ' / 60';
+	};
+	document.addEventListener ('DOMContentLoaded', show);
+}) ();
+</script>
+</body>
+</html>

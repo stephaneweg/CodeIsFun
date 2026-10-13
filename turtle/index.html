@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turtle Quest · Code is Fun</title>
+<meta name="description" content="Learn to program by guiding a turtle: write BASIC, in English or in French, through 48 levels.">
+<meta name="theme-color" content="#FFFDF8">
+<link rel="icon" href="../shared/turtle.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../shared/site.css">
+<link rel="stylesheet" href="turtle.css">
+</head>
+<body class="has-bar" data-pane="code">
+<header class="top">
+	<a class="brand" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#2F7F93"/><path d="M9 11l-4 5 4 5M23 11l4 5-4 5M18 8l-4 16" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Code is Fun</span></a>
+	<button class="btn small levels-btn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="lbl" data-en="Levels" data-fr="Niveaux">Levels</span> <span class="pack-stars"></span></button>
+	<div class="game-name">Turtle Quest</div>
+	<div class="lang" role="group" aria-label="Language / Langue"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></div>
+</header>
+
+<main class="tq">
+	<nav class="levels" aria-label="Levels">
+		<div class="levels-head">
+			<select id="packSel" aria-label="Pack of levels"></select>
+			<button class="btn icon open-pack" type="button" data-en-label="Open a pack of levels (.turtle)" data-fr-label="Ouvrir un recueil de niveaux (.turtle)"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+			<button class="btn icon close" type="button" data-en-label="Close" data-fr-label="Fermer">✕</button>
+		</div>
+		<ol id="levelList"></ol>
+		<div class="foot" id="packFoot"></div>
+		<input type="file" id="packFile" accept=".turtle,text/plain" hidden>
+	</nav>
+	<div class="scrim"></div>
+
+	<section class="level-card compact" id="card">
+		<div class="card-text">
+			<h1 id="lvTitle"></h1>
+			<p class="text" id="lvText"></p>
+			<button class="more" type="button" id="lvMore" data-en="More" data-fr="Plus">More</button>
+			<p class="hint" id="lvHint" hidden></p>
+		</div>
+		<div class="card-btns">
+			<button class="btn small" type="button" id="btHint" data-en="Hint" data-fr="Indice">Hint</button>
+			<button class="btn small" type="button" id="btLesson" data-en="Lesson" data-fr="Leçon">Lesson</button>
+		</div>
+	</section>
+
+	<div class="tabs" role="tablist">
+		<button type="button" role="tab" id="tabCode" aria-controls="codeArea" data-pane="code" data-en="Program" data-fr="Programme">Program</button>
+		<button type="button" role="tab" id="tabBoard" aria-controls="boardArea" data-pane="board" data-en="Board" data-fr="Plateau">Board</button>
+	</div>
+
+	<section class="code-area" id="codeArea">
+		<div class="actions" id="actions">
+			<button class="btn primary" type="button" id="btRun"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg><span data-en="Run" data-fr="Lancer">Run</span></button>
+			<button class="btn" type="button" id="btStep"><svg viewBox="0 0 24 24"><path d="M4 5h3v14H4zM9 4l12 8-12 8z" fill="currentColor"/></svg><span data-en="Step" data-fr="Pas à pas">Step</span></button>
+			<button class="btn" type="button" id="btStop" disabled><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg><span data-en="Stop" data-fr="Arrêter">Stop</span></button>
+			<button class="btn" type="button" id="btReset"><svg viewBox="0 0 24 24"><path d="M5 4h3v16H5zM20 4L9 12l11 8z" fill="currentColor"/></svg><span data-en="Reset" data-fr="Au départ">Reset</span></button>
+			<button class="btn icon speed-btn" type="button" id="btSpeed" aria-expanded="false" data-en-label="Speed" data-fr-label="Vitesse"><svg viewBox="0 0 24 24"><path d="M12 13l4-5M4 17a8 8 0 1116 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+			<label class="speed" id="speedBox"><span data-en="Speed" data-fr="Vitesse">Speed</span><input type="range" id="speed" min="1" max="10" value="5"></label>
+		</div>
+		<div class="editor" id="editor">
+			<div class="gutter" id="gutter" aria-hidden="true"></div>
+			<div class="code-wrap">
+				<pre class="hl" id="hl" aria-hidden="true"></pre>
+				<textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Program"></textarea>
+			</div>
+		</div>
+		<div class="chips" id="chips" aria-label="Words"></div>
+		<div class="count" id="count"></div>
+	</section>
+
+	<section class="board-area" id="boardArea" aria-label="Board">
+		<canvas id="board" role="img"></canvas>
+		<dialog id="lesson">
+			<div class="dlg-head" id="lessonTitle"></div>
+			<div class="dlg-body" id="lessonBody"></div>
+			<div class="dlg-foot"><button class="btn primary" type="button" id="lessonOk">OK</button></div>
+		</dialog>
+	</section>
+
+	<div class="msg none" id="msg" aria-live="polite"></div>
+</main>
+
+<script src="../shared/site.js"></script>
+<script src="basic.js"></script>
+<script src="world.js"></script>
+<script src="levels.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
