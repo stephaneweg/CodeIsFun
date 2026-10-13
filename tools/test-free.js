@@ -54,6 +54,17 @@ for (const ex of window.ONYX_EXAMPLES)
 		check (ex.name, !r.err && r.pc.screen.mode === 13, r.err ? 'line ' + r.err.line + ': ' + r.err.message : 'waits ' + r.waits);
 		continue;
 	}
+	if (ex.name === 'amanda.bas')
+	{
+		// a name typed, a sentence, F1 (the help) and Esc (Amanda says goodbye and ends): it answers from its DATA (MEMOIRE.DAT)
+		const sc = [], type = (at, t) => { for (const c of t) sc.push ([at++, c]); return at; };
+		let at = type (20, 'Ann\r');
+		at = type (at + 40, "j'aime les chats\r");
+		sc.push ([at + 40, '\x00;'], [at + 80, '\x1b']);
+		const r = run (ex.text, sc, 3000);
+		check (ex.name, !r.err && r.waits > at && r.waits < 3000, r.err ? 'line ' + r.err.line + ': ' + r.err.message : 'ended after ' + r.waits + ' waits');
+		continue;
+	}
 	if (ex.name === 'arkanoid.bas')
 	{
 		// the title (a key: Space), a round played with the arrow held, then Esc twice (the title, quit)

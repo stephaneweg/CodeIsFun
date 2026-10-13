@@ -11,7 +11,9 @@
 const FONT = global.BASIC_FONT;
 const b64 = (s) => Uint8Array.from (atob (s), (c) => c.charCodeAt (0));
 const F8 = b64 (FONT.f8), F14 = b64 (FONT.f14), F16 = b64 (FONT.f16);
-const toCP = (s) => { let o = ''; for (const ch of s) { const c = ch.codePointAt (0); o += String.fromCharCode (c < 128 ? c : c < 256 ? FONT.latin1[c] : 63); } return o; };
+// A text typed or written in a program (Unicode) -> code page 437: its own characters (É, █, ║, ░...), else Latin-1's
+const UNI437 = new Map (); for (let i = 0; i < 128; i++) UNI437.set (FONT.cp437[i], 128 + i);
+const toCP = (s) => { let o = ''; for (const ch of s) { const c = ch.codePointAt (0); o += String.fromCharCode (c < 128 ? c : UNI437.get (ch) ?? (c < 256 ? FONT.latin1[c] : 63)); } return o; };
 
 // QBasic's screen modes: size, the text cell's height, colours, the display scale (Onyx's)
 const MODES = { 0: [640, 400, 16, 16, 1, 1], 1: [320, 200, 8, 4, 2, 2], 2: [640, 200, 8, 2, 1, 2], 7: [320, 200, 8, 16, 2, 2], 8: [640, 200, 8, 16, 1, 2],
@@ -552,6 +554,9 @@ class Computer
 				switch (op)
 				{
 				case 'CLS': sc.cls (); return;
+				case 'WAIT':	// WAIT &H3DA, 8: the VGA's vertical retrace -- the next of 70 frames a second; anything else: no wait
+					if (Math.round (a[0]) === 0x3DA && (a[2] === null || a[2] === undefined)) { const f = 1000 / 70; return { wait: 'sleep', ms: f - (performance.now () % f), noKey: true }; }
+					return;
 				case 'SCREEN': if (a[0] !== null && a[0] !== undefined) { const m = Math.round (a[0]); if (m !== sc.mode) { sc.setMode (m); sc.cls (); if (me.turtle) me.turtleHome (); } } return;
 				case 'WIDTH': return;
 				case 'COLOR':
@@ -594,8 +599,12 @@ class Computer
 					if (a[0] === null || a[0] === undefined) { sc.pal = vgaPalette (); sc.dirty = true; return; }
 					{
 						let v = Math.round (a[1]);
-						// QBasic's PALETTE colour: &H00BBGGRR, 0-63 a channel; or Onyx's RGB ()
-						v = v >= RGBF ? v & 0xFFFFFF : (((v & 63) * 255 / 63) << 16) | ((((v >> 8) & 63) * 255 / 63) << 8) | (((v >> 16) & 63) * 255 / 63);
+						// QBasic's PALETTE colour: an EGA code 0-63 (rgbRGB) in the text and EGA modes; &H00BBGGRR (0-63 a
+						// channel) in the VGA ones; or Onyx's RGB ()
+						if (v >= RGBF) v &= 0xFFFFFF;
+						else if ([0, 7, 8, 9, 10].includes (sc.mode) && v < 64)
+							v = ((((v >> 2) & 1) * 0xAA + ((v >> 5) & 1) * 0x55) << 16) | ((((v >> 1) & 1) * 0xAA + ((v >> 4) & 1) * 0x55) << 8) | ((v & 1) * 0xAA + ((v >> 3) & 1) * 0x55);
+						else v = (((v & 63) * 255 / 63) << 16) | ((((v >> 8) & 63) * 255 / 63) << 8) | (((v >> 16) & 63) * 255 / 63);
 						sc.pal[Math.round (a[0]) & 255] = v; sc.dirty = true;
 					}
 					return;

@@ -43,7 +43,7 @@ const KEYWORDS = new Set ([
 	'DATA', 'READ', 'RESTORE', 'SWAP', 'REDIM', 'PRESERVE', 'ERASE', 'TYPE', 'ON', 'OFF', 'ERROR', 'RESUME', 'OPTION', 'DEF',
 	'USING', 'CLS', 'SCREEN', 'COLOR', 'LOCATE', 'PSET', 'PRESET', 'LINE', 'CIRCLE', 'PAINT', 'DRAW', 'PALETTE', 'SLEEP',
 	'BEEP', 'SOUND', 'PLAY', 'WIDTH', 'VIEW', 'WINDOW', 'GET', 'PUT', 'FULLSCREEN', 'PAUSE', 'DRAWTEXT', 'NOTEON', 'NOTEOFF',
-	'OPEN', 'CLOSE', 'KILL', 'CHAIN', 'SHELL', 'FILES', 'KEY', 'PCOPY']);
+	'OPEN', 'CLOSE', 'KILL', 'CHAIN', 'SHELL', 'FILES', 'KEY', 'PCOPY', 'WAIT']);
 // BASIC's own French words (Onyx BASIC's bas::FRENCH): French -> English
 const FRENCH = {
 	SI: 'IF', ALORS: 'THEN', SINON: 'ELSE', SINONSI: 'ELSEIF', FIN: 'END',
@@ -208,7 +208,7 @@ function tokenize (src, dialect)
 }
 
 // ---- the parser ----------------------------------------------------------------------------------------------------------
-const GFX_ONLY = ['CLS', 'SCREEN', 'COLOR', 'LOCATE', 'PSET', 'PRESET', 'CIRCLE', 'PAINT', 'DRAW', 'PALETTE', 'SLEEP', 'BEEP', 'SOUND',
+const GFX_ONLY = ['WAIT', 'CLS', 'SCREEN', 'COLOR', 'LOCATE', 'PSET', 'PRESET', 'CIRCLE', 'PAINT', 'DRAW', 'PALETTE', 'SLEEP', 'BEEP', 'SOUND',
 	'PLAY', 'GET', 'PUT', 'FULLSCREEN', 'PAUSE', 'DRAWTEXT', 'NOTEON', 'NOTEOFF', 'WIDTH'];
 class Parser
 {
@@ -459,6 +459,8 @@ class Parser
 			if (GFX_ONLY.includes (t.v)) return this.gfxStmt ();
 			this.err ();
 		}
+		if (t.t === 'id' && t.v === 'TIMER' && (this.isKw ('ON', 1) || this.isKw ('OFF', 1) || this.isKw ('STOP', 1)))
+		{ this.next (); return { k: 'timer', mode: this.next ().v, line }; }
 		if (t.t === 'id') return this.assignOrCall (false);
 		this.err ();
 	}
@@ -601,6 +603,12 @@ class Parser
 	onStmt ()
 	{
 		const line = this.next ().line;
+		if (this.peek ().t === 'id' && this.peek ().v === 'TIMER')
+		{
+			this.next (); this.expectOp ('('); const e = this.expr (); this.expectOp (')');
+			this.expectKw ('GOSUB');
+			return { k: 'ontimer', e, name: this.labelRef (line, true), line };
+		}
 		if (this.isKw ('ERROR'))
 		{
 			this.next (); this.expectKw ('GOTO');
@@ -926,7 +934,18 @@ class Interp
 		const r = this.host.onStatement ? this.host.onStatement (line) : true;
 		if (r === false) throw new Endless ();
 		if (r === 'yield') yield SLICE;
+		// ON TIMER: its GOSUB when the time has come (at the module's level, not inside another event)
+		const tv = this.tev;
+		if (tv && tv.on && !this.inEvent && this.now () >= tv.next)
+		{
+			tv.next = this.now () + tv.ms;
+			const saved = this.frames;
+			this.frames = [saved[0]]; this.inEvent = true;
+			try { yield* this.gosub (tv.target); }
+			finally { this.inEvent = false; this.frames = saved; this.line = line; }
+		}
 	}
+	now () { return typeof performance !== 'undefined' ? performance.now () : Date.now (); }
 	*block (stmts, start = 0)
 	{
 		for (let i = start; i < stmts.length; i++)
@@ -1091,6 +1110,17 @@ class Interp
 			if (s.gosub) { yield* this.gosub (t); return null; }
 			throw new Jump (t);
 		}
+		case 'ontimer':
+		{
+			const sec = num (yield* this.eval (s.e), s.line);
+			this.tev = { ms: Math.max (1, sec) * 1000, target: this.prog.labels[''][s.name], on: this.tev ? this.tev.on : false, next: this.now () + Math.max (1, sec) * 1000 };
+			return null;
+		}
+		case 'timer':
+			if (!this.tev) return null;
+			if (s.mode === 'ON') { if (!this.tev.on) this.tev.next = this.now () + this.tev.ms; this.tev.on = true; }
+			else this.tev.on = false;
+			return null;
 		case 'onerror': this.onErr = s.name ? this.prog.labels[''][s.name] : null; return null;
 		case 'resume':
 			if (!this.inHandler) throw new BasicError ('RESUME without error', s.line);
