@@ -543,6 +543,6 @@ function targetOf (L)
 	return w.segs;
 }
 
-const Turtle = { LANG_EN, LANG_FR, WORDS, WORD_HELP, CONCEPTS, DIALECT, wordName, parsePack, checkLevel, countInstructions, World, apply, runProgram, targetOf };
+const Turtle = { LANG_EN, LANG_FR, WORDS, WORD_HELP, CONCEPTS, DIALECT, friendly, wordName, parsePack, checkLevel, countInstructions, World, apply, runProgram, targetOf };
 if (typeof module !== 'undefined' && module.exports) module.exports = Turtle; else global.Turtle = Turtle;
 }) (typeof window !== 'undefined' ? window : globalThis);

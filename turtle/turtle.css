@@ -89,3 +89,39 @@ dialog .palette span { border-radius: 6px; text-align: center; font: 700 13px va
 	body:not(.running) #btStop, body.running #btReset { display: none; }
 }
 
+
+/* ---- the free mode (pack 6): the computer's screen on the left, the program on the right ---- */
+.screen-area, .screen-bar { display: none; }
+body.free .tq { grid-template-columns: minmax(0, 1.35fr) minmax(340px, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+	grid-template-areas: "fbar code" "board code" "msg code"; }
+body.free .screen-bar { display: flex; grid-area: fbar; }
+body.free .levels, body.free .level-card, body.free .board-area, body.free .chips, body.free .count,
+body.free #btStep, body.free #btSpeed, body.free .actions .speed { display: none; }
+body.free .screen-area { display: flex; grid-area: board; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
+.screen-bar { gap: 8px; align-items: center; flex-wrap: wrap; }
+.screen-bar select { min-height: 40px; padding: 0 10px; border: 1px solid var(--btn-border); border-radius: var(--r-sm); background: var(--btn); min-width: 0; flex: 1 1 160px; }
+.screen-bar .btn { flex: none; }
+.screen-wrap { position: relative; flex: 1; min-height: 200px; display: flex; align-items: center; justify-content: center; background: #101010;
+	border-radius: var(--r-md); padding: 8px; overflow: hidden; }
+#screen { display: block; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; outline: none; background: #000; }
+.screen-area:fullscreen { display: flex; flex-direction: column; gap: 8px; padding: 8px; background: #000; }
+.screen-area:fullscreen .screen-wrap { padding: 0; border-radius: 0; }
+.screen-area:fullscreen .keypad button { background: #222; color: #eee; border-color: #444; }
+.kbd-input { position: absolute; left: 50%; bottom: 0; width: 2px; height: 2px; opacity: 0; border: 0; padding: 0; font-size: 16px; pointer-events: none; }
+.keypad { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.keypad button { min-width: 48px; min-height: 48px; border: 1px solid var(--btn-border); border-radius: var(--r-sm); background: var(--btn); font: 600 16px var(--font-ui);
+	touch-action: none; user-select: none; -webkit-user-select: none; }
+.keypad button.wide { min-width: 96px; }
+.keypad button:active, .keypad button.down { background: var(--accent-soft); border-color: var(--accent); }
+@media (max-width: 1099px) {
+	body.free .tq { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "fbar" "board" "msg" "code"; }
+	body.free .screen-wrap { min-height: 0; aspect-ratio: 4 / 3; flex: none; }
+	body.free .editor { min-height: 300px; }
+}
+@media (max-width: 699px) {
+	body.free .tq { grid-template-areas: "fbar" "tabs" "msg" "code" "board"; }
+	body.free[data-pane="code"] .screen-area { display: none; }
+	body.free[data-pane="board"] .screen-area { display: flex; }
+	body.free .screen-wrap { padding: 4px; }
+	body.free:not(.running) #btStop { display: none; }
+}

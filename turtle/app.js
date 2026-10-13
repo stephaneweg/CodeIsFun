@@ -23,7 +23,8 @@ for (const p of window.TURTLE_PACKS || [])
 	try { packs.push (Turtle.parsePack (p.text)); }
 	catch (e) { console.error (p.name, e.message); }
 }
-let pk = Math.min (P.pack | 0, packs.length - 1), lv = 0, L = null, target = null;
+let pk = Math.min (P.pack === 'free' ? 0 : P.pack | 0, packs.length - 1), lv = 0, L = null, target = null;
+let free = false;				// the free mode (the last pack): the computer's screen, BASIC whole
 
 // ---- the colours (Onyx's) -------------------------------------------------------------------------------------------------------
 const hex = (n) => '#' + n.toString (16).padStart (6, '0');
@@ -36,9 +37,9 @@ function mix (a, b, k) { const f = (s) => [(s >> 16) & 255, (s >> 8) & 255, s & 
 // ---- the level list -------------------------------------------------------------------------------------------------------------
 function renderPacks ()
 {
-	const sel = $('packSel');
-	sel.innerHTML = packs.map ((p, i) => '<option value="' + i + '">' + Site.esc (p.title[Site.L] || p.title[0]) + '</option>').join ('');
-	sel.value = String (pk);
+	const html = packs.map ((p, i) => '<option value="' + i + '">' + Site.esc (p.title[Site.L] || p.title[0]) + '</option>').join ('') +
+		'<option value="free">' + (packs.length + 1) + '. ' + Site.esc (t ('Free mode', 'Mode libre')) + '</option>';
+	for (const sel of [$('packSel'), $('freePack')]) { sel.innerHTML = html; sel.value = free ? 'free' : String (pk); }
 }
 function packStars (p) { return p.levels.reduce ((s, l) => s + (P.stars[l.id] | 0), 0); }
 function renderList ()
@@ -60,7 +61,8 @@ $('levelList').addEventListener ('click', (e) =>
 	showLevel (pk, +b.dataset.i);
 	Site.openLevels (false);
 });
-$('packSel').addEventListener ('change', () => showLevel (+$('packSel').value, 0));
+for (const sel of [$('packSel'), $('freePack')])
+	sel.addEventListener ('change', () => { if (sel.value === 'free') enterFree (); else showLevel (+sel.value, 0); Site.openLevels (false); });
 document.querySelector ('.open-pack').addEventListener ('click', () => $('packFile').click ());
 $('packFile').addEventListener ('change', async () =>
 {
@@ -79,7 +81,8 @@ $('packFile').addEventListener ('change', async () =>
 // ---- the editor --------------------------------------------------------------------------------------------------------------------
 const ed = $('code'), hl = $('hl'), gutter = $('gutter');
 let hiLine = 0, badLine = 0;
-const KNOWN = new Set ([...Basic.KEYWORDS, ...Object.keys (Basic.FRENCH), ...Turtle.WORDS.flatMap ((w) => [w[0], w[1]]), ...Object.keys (Turtle.DIALECT.aliases)]);
+const KNOWN = new Set ([...Basic.KEYWORDS, ...Object.keys (Basic.FRENCH), ...Turtle.WORDS.flatMap ((w) => [w[0], w[1]]), ...Object.keys (Turtle.DIALECT.aliases),
+	...Object.keys (Basic.BUILTINS), ...Object.keys (Basic.HOSTFN), 'TAB', 'SPC', 'LBOUND', 'UBOUND', 'ERR', 'ERL', 'B', 'BF']);
 function colour (line)
 {
 	let out = '', i = 0;
@@ -146,8 +149,9 @@ function insert (text)
 }
 function saveCode ()
 {
-	if (!L) return;
-	if (P.code[L.id] !== ed.value) { P.code[L.id] = ed.value; save (); }
+	const key = free ? '__free' : L && L.id;
+	if (!key) return;
+	if (P.code[key] !== ed.value) { P.code[key] = ed.value; save (); }
 }
 
 // ---- the chips: the words the level knows, a tap writes one -----------------------------------------------------------------------------
@@ -158,6 +162,7 @@ const CONTROL = [['REPEAT', 'REPETER', 0, 'REPEAT 4\n  \nEND REPEAT', 'REPETER 4
 // The empty program's reminder: one instruction per line
 function renderPlaceholder ()
 {
+	if (free) { ed.placeholder = t ('Any BASIC program, for example:\nSCREEN 12\nCIRCLE (320, 240), 100, 14\nPRINT "Hello!"\n\n(or choose an example above the screen)', 'N\'importe quel programme BASIC, par exemple :\nSCREEN 12\nCIRCLE (320, 240), 100, 14\nAFFICHER "Bonjour !"\n\n(ou choisis un exemple au-dessus de l\'écran)'); return; }
 	ed.placeholder = t ("One instruction per line:\nFORWARD 2\nFORWARD 1\n(Enter after each one)", "Une instruction par ligne :\nAVANCER 2\nAVANCER 1\n(Entrée après chacune)");
 }
 function renderChips ()
@@ -382,12 +387,14 @@ function tick (now)
 function go () { if (!raf) raf = requestAnimationFrame (tick); }
 function doRun ()
 {
+	if (free) { freeRun (); return; }
 	if (mode === 'pause') { stepping = false; mode = 'run'; lastT = 0; setRunning (true); showPane ('board'); go (); return; }
 	if (mode === 'run') { stepping = false; setRunning (true); return; }
 	if (startRun (false)) go ();
 }
 function doStep ()
 {
+	if (free) return;
 	if (mode === 'pause') { stepping = true; mode = 'run'; lastT = 0; showPane ('board'); go (); return; }
 	if (mode === 'run') { stepping = true; return; }
 	if (startRun (true))
@@ -401,6 +408,7 @@ function doStep ()
 }
 function doStop ()
 {
+	if (free) { if (pc && pc.running ()) pc.stop (null); return; }
 	if (mode !== 'run' && mode !== 'pause') return;
 	cancelAnimationFrame (raf); raf = 0;
 	mode = 'idle'; tEv = 0;
@@ -409,7 +417,7 @@ function doStop ()
 	message ('info', t ('Stopped. Reset puts the turtle back at its start.', 'Arrêté. « Au départ » remet la tortue à sa place.'));
 	draw ();
 }
-function doReset () { resetView (); badLine = 0; renderCode (); message ('none'); }
+function doReset () { if (free) { if (pc && !pc.running ()) { pc.screen.setMode (0); pc.screen.cls (); pc.turtle = null; pc.show (); fitScreen (); } badLine = 0; renderCode (); message ('none'); return; } resetView (); badLine = 0; renderCode (); message ('none'); }
 function doNext ()
 {
 	if (lv + 1 < packs[pk].levels.length) showLevel (pk, lv + 1);
@@ -431,6 +439,11 @@ document.addEventListener ('click', (e) => { if (!e.target.closest ('#actions'))
 
 document.addEventListener ('keydown', (e) =>
 {
+	if (free && pc && pc.running () && e.target.tagName !== 'SELECT' && !(e.key === 'Enter' && (e.ctrlKey || e.metaKey)))
+	{
+		if (pc.keyDown (e)) e.preventDefault ();
+		return;
+	}
 	const inEd = e.target === ed || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT';
 	if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault (); doRun (); }
 	else if (e.key === 'F8') { e.preventDefault (); doStep (); }
@@ -642,10 +655,162 @@ function draw ()
 	cv.setAttribute ('aria-label', t ('The board: the turtle at column %c, row %r.', 'Le plateau : la tortue colonne %c, ligne %r.').replace ('%c', w.cx () + 1).replace ('%r', w.cy () + 1) + (parts.length ? ' ' + parts.join (', ').replace ('\u0000', '') : ''));
 }
 
+// ---- the free mode: the computer's screen (screen.js), any BASIC program --------------------------------------------------------------
+let pc = null;
+const MY_EXAMPLES = [
+	{ title: ['Hello, who are you?', 'Bonjour, qui es-tu ?'], src: ['INPUT "What is your name"; name$\nINPUT "How old are you"; age\nPRINT "Hello, "; name$; "! In ten years you will be"; age + 10\n',
+		'SAISIR "Comment t\'appelles-tu"; nom$\nSAISIR "Quel âge as-tu"; age\nAFFICHER "Bonjour, "; nom$; " ! Dans dix ans tu auras"; age + 10; "ans."\n'] },
+	{ title: ['A bouncing ball (arrows, Esc)', 'Une balle qui rebondit (flèches, Échap)'], src: [
+		"' A ball bounces: the arrows push it, Esc stops\nSCREEN 13\nx = 160: y = 100: dx = 2: dy = 1.5\nDO\n  CIRCLE (x, y), 6, 0, , , , F\n  x = x + dx: y = y + dy\n  IF x < 6 OR x > 313 THEN dx = -dx: PLAY \"MB T255 L64 O5 C\"\n  IF y < 6 OR y > 193 THEN dy = -dy: PLAY \"MB T255 L64 O4 G\"\n  IF KEYDOWN(\"LEFT\") THEN dx = dx - .1\n  IF KEYDOWN(\"RIGHT\") THEN dx = dx + .1\n  IF KEYDOWN(\"UP\") THEN dy = dy - .1\n  IF KEYDOWN(\"DOWN\") THEN dy = dy + .1\n  CIRCLE (x, y), 6, 14, , , , F\n  PAUSE 16\nLOOP UNTIL INKEY$ = CHR$(27)\n",
+		"' Une balle rebondit : les flèches la poussent, Échap arrête\nSCREEN 13\nx = 160: y = 100: dx = 2: dy = 1.5\nFAIRE\n  CIRCLE (x, y), 6, 0, , , , F\n  x = x + dx: y = y + dy\n  SI x < 6 OU x > 313 ALORS dx = -dx: PLAY \"MB T255 L64 O5 C\"\n  SI y < 6 OU y > 193 ALORS dy = -dy: PLAY \"MB T255 L64 O4 G\"\n  SI KEYDOWN(\"LEFT\") ALORS dx = dx - .1\n  SI KEYDOWN(\"RIGHT\") ALORS dx = dx + .1\n  SI KEYDOWN(\"UP\") ALORS dy = dy - .1\n  SI KEYDOWN(\"DOWN\") ALORS dy = dy + .1\n  CIRCLE (x, y), 6, 14, , , , F\n  PAUSE 16\nBOUCLE JUSQUA INKEY$ = CHR$(27)\n"] },
+	{ title: ['The turtle on the screen', 'La tortue sur l\'écran'], src: [
+		"' The turtle's words draw on the screen too\nSCREEN 12\nFOR i = 1 TO 120\n  COLOR 1 + i MOD 15\n  FORWARD i * 2\n  RIGHT 61\nNEXT\n",
+		"' Les mots de la tortue dessinent aussi sur l'écran\nSCREEN 12\nPOUR i = 1 JUSQUE 120\n  COULEUR 1 + i MOD 15\n  AVANCER i * 2\n  DROITE 61\nSUITE\n"] },
+	{ title: ['256 colours', '256 couleurs'], src: [
+		"' SCREEN 13: the 256 colours of the VGA palette\nSCREEN 13\nFOR c = 0 TO 255\n  x = (c MOD 16) * 20: y = (c \\ 16) * 12\n  LINE (x, y)-(x + 18, y + 10), c, BF\nNEXT\nLOCATE 25, 1: PRINT \"Press a key\";\nSLEEP\n",
+		"' SCREEN 13 : les 256 couleurs de la palette VGA\nSCREEN 13\nPOUR c = 0 JUSQUE 255\n  x = (c MOD 16) * 20: y = (c \\ 16) * 12\n  LINE (x, y)-(x + 18, y + 10), c, BF\nSUITE\nLOCATE 25, 1: AFFICHER \"Appuie sur une touche\";\nSLEEP\n"] },
+	{ title: ['A tune', 'Un air de musique'], src: [
+		"' PLAY: QBasic's music language\nPRINT \"Ode to Joy\"\nPLAY \"T120 O3 L4 E E F G G F E D C C D E E. D8 D2\"\nPLAY \"E E F G G F E D C C D E D. C8 C2\"\n",
+		"' PLAY : le langage de musique de QBasic\nAFFICHER \"L'Hymne à la joie\"\nPLAY \"T120 O3 L4 E E F G G F E D C C D E E. D8 D2\"\nPLAY \"E E F G G F E D C C D E D. C8 C2\"\n"] }];
+function renderExamples ()
+{
+	let h = '<option value="">' + Site.esc (t ('Examples...', 'Exemples...')) + '</option>';
+	MY_EXAMPLES.forEach ((x, i) => { h += '<option value="m' + i + '">' + Site.esc (x.title[Site.L]) + '</option>'; });
+	const ONYX = { 'hello.bas': ['Hello, world (Onyx)', 'Hello, world (Onyx)'], 'guess.bas': ['Guess the number (Onyx)', 'Devine le nombre (Onyx)'],
+		'graphics.bas': ['Lines and circles (Onyx)', 'Lignes et cercles (Onyx)'], 'arkanoid.bas': ['Arkanoid, a brick breaker (Onyx)', 'Arkanoid, un casse-briques (Onyx)'] };
+	(window.ONYX_EXAMPLES || []).forEach ((x, i) => { h += '<option value="o' + i + '">' + Site.esc ((ONYX[x.name] || [x.name, x.name])[Site.L]) + '</option>'; });
+	$('examples').innerHTML = h;
+}
+$('examples').addEventListener ('change', () =>
+{
+	const v = $('examples').value; $('examples').value = '';
+	if (!v) return;
+	const src = v[0] === 'm' ? MY_EXAMPLES[+v.slice (1)].src[Site.L] : window.ONYX_EXAMPLES[+v.slice (1)].text;
+	if (ed.value.trim () && ed.value !== src && !confirm (t ('Replace your program with this example?', 'Remplacer ton programme par cet exemple ?'))) return;
+	if (pc && pc.running ()) pc.stop ();
+	ed.value = src; badLine = 0; renderCode (); saveCode ();
+	ed.scrollTop = 0; syncScroll ();
+	message ('info', t ('An example: press Run.', 'Un exemple : appuie sur Lancer.'));
+});
+// the screen fitted to its room, its proportions kept (a 320-wide mode shown doubled, as in Onyx)
+function fitScreen ()
+{
+	if (!pc) return;
+	const wrap = $('screenWrap'), sc = pc.screen, aw = sc.W * sc.sx, ah = sc.H * sc.sy;
+	const W = wrap.clientWidth - 16, H = wrap.clientHeight - 16;
+	if (W <= 0 || H <= 0) return;
+	const k = Math.min (W / aw, H / ah);
+	$('screen').style.width = Math.floor (aw * k) + 'px'; $('screen').style.height = Math.floor (ah * k) + 'px';
+}
+new ResizeObserver (fitScreen).observe ($('screenWrap'));
+function makeComputer ()
+{
+	if (pc) return pc;
+	pc = new BasicScreen.Computer ($('screen'), {
+		onEnd: freeEnded,
+		onNeedKeyboard () { if (matchMedia ('(pointer: coarse)').matches) $('kbd').focus ({ preventScroll: true }); },
+		onFullscreen (on) { const w = $('screenArea'); try { if (on && !document.fullscreenElement) w.requestFullscreen (); else if (!on && document.fullscreenElement) document.exitFullscreen (); } catch (e) { /* (a gesture needed) */ } } });
+	pc.screen.onMode = fitScreen;
+	pc.show ();
+	return pc;
+}
+function freeRun ()
+{
+	makeComputer ();
+	if (pc.running ()) return;
+	if ($('lesson').open) $('lesson').close ();
+	saveCode ();
+	badLine = 0; renderCode ();
+	let prog;
+	try { prog = Basic.compile (ed.value, BasicScreen.FREE_DIALECT); }
+	catch (e)
+	{
+		if (!(e instanceof Basic.BasicError)) throw e;
+		badLine = e.line; renderCode (); showLine (e.line); showPane ('code');
+		message ('err', Turtle.friendly (Site.L, e.line, e.message));
+		return;
+	}
+	ed.readOnly = true; document.body.classList.add ('running');
+	$('btRun').disabled = true; $('btStop').disabled = false;
+	message ('info', t ('The program runs: its keys go to the screen. Stop ends it.', 'Le programme tourne : les touches vont à l\'écran. « Arrêter » le termine.'));
+	showPane ('board');
+	pc.start (prog, BasicScreen.FREE_DIALECT);
+	fitScreen ();
+	$('screen').focus ({ preventScroll: true });
+}
+function freeEnded (e)
+{
+	ed.readOnly = false; document.body.classList.remove ('running');
+	$('btRun').disabled = false; $('btStop').disabled = true;
+	if (e === null || e === undefined) { message ('info', t ('The program has ended.', 'Le programme est terminé.')); return; }
+	if (e instanceof Basic.BasicError)
+	{
+		badLine = e.line; renderCode (); if (e.line) showLine (e.line);
+		let show = null;
+		if (Site.isPhone () && e.line)
+		{
+			show = document.createElement ('button');
+			show.type = 'button'; show.className = 'btn small'; show.textContent = t ('Show the line', 'Voir la ligne');
+			show.addEventListener ('click', () => { showPane ('code'); showLine (badLine); });
+		}
+		message ('err', Turtle.friendly (Site.L, e.line, e.message), 0, show);
+		return;
+	}
+	message ('err', String (e && e.message || e));
+	console.error (e);
+}
+function enterFree ()
+{
+	if (free) return;
+	if (L) saveCode ();
+	resetView ();
+	free = true;
+	document.body.classList.add ('free');
+	P.pack = 'free'; save ();
+	makeComputer ();
+	ed.value = P.code.__free || '';
+	badLine = 0; renderCode (); renderPlaceholder ();
+	renderPacks ();
+	const tb = $('tabBoard'); tb.dataset.en = 'Screen'; tb.dataset.fr = 'Écran'; tb.textContent = t ('Screen', 'Écran');
+	if (matchMedia ('(pointer: coarse)').matches) { $('keypad').hidden = false; $('btKeys').setAttribute ('aria-pressed', 'true'); }
+	message ('info', t ('Free mode: write any BASIC program, then Run. The screen is the computer\'s.', 'Mode libre : écris n\'importe quel programme BASIC, puis Lancer. L\'écran est celui de l\'ordinateur.'));
+	showPane ('code');
+	requestAnimationFrame (fitScreen);
+}
+function leaveFree ()
+{
+	if (!free) return;
+	if (pc && pc.running ()) pc.stop ();
+	saveCode ();
+	free = false;
+	document.body.classList.remove ('free');
+	const tb = $('tabBoard'); tb.dataset.en = 'Board'; tb.dataset.fr = 'Plateau'; tb.textContent = t ('Board', 'Plateau');
+	renderPlaceholder ();
+}
+$('btFull').addEventListener ('click', () => { const w = $('screenArea'); if (document.fullscreenElement) document.exitFullscreen (); else if (w.requestFullscreen) w.requestFullscreen ().then (() => setTimeout (fitScreen, 100)).catch (() => {}); $('screen').focus (); });
+document.addEventListener ('fullscreenchange', () => setTimeout (fitScreen, 100));
+$('btKeys').addEventListener ('click', () => { const on = $('keypad').hidden; $('keypad').hidden = !on; $('btKeys').setAttribute ('aria-pressed', String (on)); requestAnimationFrame (fitScreen); });
+// the on-screen keys: held while pressed (KEYDOWN), typed once (INKEY$)
+$('keypad').addEventListener ('pointerdown', (e) =>
+{
+	const b = e.target.closest ('button'); if (!b) return;
+	e.preventDefault ();
+	if (b.dataset.kbd) { $('kbd').focus (); return; }
+	b.classList.add ('down');
+	if (pc) pc.keyDown ({ key: b.dataset.key });
+	const up = () => { b.classList.remove ('down'); if (pc) pc.keyUp ({ key: b.dataset.key }); b.removeEventListener ('pointerup', up); b.removeEventListener ('pointercancel', up); b.removeEventListener ('pointerleave', up); };
+	b.addEventListener ('pointerup', up); b.addEventListener ('pointercancel', up); b.addEventListener ('pointerleave', up);
+});
+// a phone's keyboard: what is typed in the hidden field goes to the program
+$('kbd').addEventListener ('input', () => { const v = $('kbd').value; $('kbd').value = ''; if (pc && v) for (const ch of v) pc.keyDown ({ key: ch }); });
+$('kbd').addEventListener ('beforeinput', (e) => { if (e.inputType === 'deleteContentBackward' && pc && !$('kbd').value) { pc.keyDown ({ key: 'Backspace' }); } if (e.inputType === 'insertLineBreak' && pc) { e.preventDefault (); pc.keyDown ({ key: 'Enter' }); } });
+document.addEventListener ('keyup', (e) => { if (free && pc) pc.keyUp (e); });
+
 // ---- a level shown -----------------------------------------------------------------------------------------------------------------
 function showLevel (p, l)
 {
 	if (!packs.length) return;
+	leaveFree ();
 	if (L) saveCode ();
 	pk = p; lv = l; L = packs[p].levels[l];
 	target = L.draw ? Turtle.targetOf (L) : null;
@@ -653,7 +818,7 @@ function showLevel (p, l)
 	badLine = 0; showHint = false;
 	$('card').classList.add ('compact');
 	P.pack = p; P.level = l; save ();
-	$('packSel').value = String (p);
+	$('packSel').value = String (p); $('freePack').value = String (p);
 	resetView ();
 	message ('none');
 	renderList (); renderCard (); renderChips (); refreshCount ();
@@ -667,14 +832,15 @@ let ready = false;
 Site.onLang (() =>
 {
 	if (!ready) return;
-	renderPacks (); renderList (); renderCard (); renderChips (); renderPlaceholder (); refreshCount (); draw ();
-	if (mode === 'idle') message ('none');
+	renderPacks (); renderList (); renderCard (); renderChips (); renderPlaceholder (); refreshCount (); draw (); renderExamples ();
+	if (mode === 'idle' && !free) message ('none');
 });
 document.addEventListener ('DOMContentLoaded', () =>
 {
 	ready = true;
-	renderPacks (); renderPlaceholder ();
+	renderPacks (); renderPlaceholder (); renderExamples ();
 	const levels = packs[pk] ? packs[pk].levels.length : 0;
 	showLevel (pk, Math.min (P.level | 0, Math.max (0, levels - 1)));
+	if (P.pack === 'free' || new URLSearchParams (location.search).has ('free')) enterFree ();
 });
 }) ();

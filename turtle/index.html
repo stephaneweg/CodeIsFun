@@ -73,6 +73,24 @@
 		<canvas id="board" role="img"></canvas>
 	</section>
 
+	<!-- the free mode: the computer's screen -->
+	<div class="screen-bar" id="freeBar">
+		<select id="freePack" aria-label="Pack of levels"></select>
+		<select id="examples" aria-label="Examples"></select>
+		<button class="btn icon" type="button" id="btKeys" aria-pressed="false" data-en-label="Arrows and keys on the screen" data-fr-label="Flèches et touches à l'écran"><svg viewBox="0 0 24 24"><path d="M12 3l3 3h-2v3h-2V6H9zM12 21l-3-3h2v-3h2v3h2zM3 12l3-3v2h3v2H6v2zM21 12l-3 3v-2h-3v-2h3V9z" fill="currentColor"/></svg></button>
+		<button class="btn icon" type="button" id="btFull" data-en-label="Full screen" data-fr-label="Plein écran"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+	</div>
+	<section class="screen-area" id="screenArea" aria-label="Screen">
+		<div class="screen-wrap" id="screenWrap"><canvas id="screen" tabindex="0" aria-label="The computer's screen"></canvas>
+			<input id="kbd" class="kbd-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="enter" aria-label="Keyboard">
+		</div>
+		<div class="keypad" id="keypad" hidden>
+			<button type="button" data-key="ArrowLeft" aria-label="Left">◀</button><button type="button" data-key="ArrowUp" aria-label="Up">▲</button><button type="button" data-key="ArrowDown" aria-label="Down">▼</button><button type="button" data-key="ArrowRight" aria-label="Right">▶</button>
+			<button type="button" data-key=" " class="wide" data-en="Space" data-fr="Espace">Space</button><button type="button" data-key="Enter" data-en="Enter" data-fr="Entrée">Enter</button><button type="button" data-key="Escape" data-en="Esc" data-fr="Échap">Esc</button>
+			<button type="button" data-kbd="1" aria-label="Keyboard">⌨</button>
+		</div>
+	</section>
+
 	<div class="msg none" id="msg" aria-live="polite"></div>
 </main>
 
@@ -86,6 +104,9 @@
 <script src="basic.js"></script>
 <script src="world.js"></script>
 <script src="levels.js"></script>
+<script src="font.js"></script>
+<script src="screen.js"></script>
+<script src="onyx-examples.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

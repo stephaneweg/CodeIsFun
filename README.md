@@ -8,6 +8,11 @@ en **français** ou en **anglais** :
   boucles, conditions, capteurs, variables, tes propres mots (`SUB`, `FUNCTION`), récursivité et fractales.
   Le BASIC se tape **en anglais ou en français** (`FORWARD` / `AVANCER`, `REPEAT` / `REPETER`, `IF … THEN` /
   `SI … ALORS`…), même mélangés, quelle que soit la langue de l'interface.
+  **Le recueil 6, le mode libre** : à gauche l'écran d'un ordinateur, à droite le code — tout le BASIC de QBasic
+  (et d'Onyx) sauf les fichiers : `SCREEN` 0 à 13, `PRINT`, `LOCATE`, `COLOR`, `PSET`, `LINE`, `CIRCLE`, `PAINT`,
+  `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
+  (`BEEP`, `SOUND`, `PLAY`, `NOTEON`), `GOTO`/`GOSUB`, `DATA`/`READ`, `TYPE`, `ON ERROR`… Des exemples, dont
+  l'Arkanoid d'Onyx tel quel. Sur téléphone : un pavé de flèches et le clavier du téléphone pour `INPUT`.
 - **[Circuits](circuits/)** : relie des portes logiques (NON, ET, OU, OUX, NON-ET, NON-OU) jusqu'à ce que les
   lampes suivent la table de vérité. 3 mondes, 20 niveaux, d'un simple fil jusqu'à un additionneur deux bits.
 
@@ -28,9 +33,9 @@ Raccourcis : **Ctrl+Entrée** lancer / vérifier, **F8** pas à pas, **F9** au d
 | Dossier | Contenu |
 |---|---|
 | `shared/` | le style commun (`site.css`), la langue et la progression (`site.js`), les icônes |
-| `turtle/` | `basic.js` (l'interpréteur BASIC, FR/EN), `world.js` (le moteur : niveaux, monde, exécution enregistrée), `app.js` (l'interface), `levels.js` (généré) |
+| `turtle/` | `basic.js` (l'interpréteur BASIC, FR/EN), `world.js` (le moteur : niveaux, monde, exécution enregistrée), `screen.js` (l'ordinateur du mode libre : écran, clavier, souris, son), `app.js` (l'interface), `levels.js`, `onyx-examples.js` et `font.js` (générés) |
 | `circuits/` | `engine.js` (le moteur : plateau, routage des fils, évaluation, vérification), `lessons.js`, `app.js`, `levels.js` (généré) |
-| `tools/` | `sync-levels.py` (recopie les niveaux d'Onyx), `test-turtle.js`, `test-circuits.js`, `shots.js` (captures) |
+| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid compris), `test-circuits.js`, `shots.js` (captures) |
 | `docs/DESIGN.md` | la direction de l'interface (mises en page ordinateur / tablette / téléphone) |
 
 ## Les niveaux
@@ -41,6 +46,7 @@ Pour les reprendre après un changement dans Onyx :
 ```sh
 python3 tools/sync-levels.py ../Onyx      # turtle/levels.js et circuits/levels.js
 node tools/test-turtle.js                 # chaque solution gagne avec 3 étoiles, en anglais et en français
+node tools/test-free.js                   # le mode libre : les exemples d'Onyx (Arkanoid joué un peu), QBasic
 node tools/test-circuits.js
 ```
 
