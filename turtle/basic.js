@@ -43,7 +43,9 @@ const KEYWORDS = new Set ([
 	'DATA', 'READ', 'RESTORE', 'SWAP', 'REDIM', 'PRESERVE', 'ERASE', 'TYPE', 'ON', 'OFF', 'ERROR', 'RESUME', 'OPTION', 'DEF',
 	'USING', 'CLS', 'SCREEN', 'COLOR', 'LOCATE', 'PSET', 'PRESET', 'LINE', 'CIRCLE', 'PAINT', 'DRAW', 'PALETTE', 'SLEEP',
 	'BEEP', 'SOUND', 'PLAY', 'WIDTH', 'VIEW', 'WINDOW', 'GET', 'PUT', 'FULLSCREEN', 'PAUSE', 'DRAWTEXT', 'NOTEON', 'NOTEOFF',
-	'OPEN', 'CLOSE', 'KILL', 'CHAIN', 'SHELL', 'FILES', 'KEY', 'PCOPY', 'WAIT']);
+	'OPEN', 'CLOSE', 'KILL', 'CHAIN', 'SHELL', 'FILES', 'KEY', 'PCOPY', 'WAIT', 'APPEND', 'OUTPUT',
+	// Onyx's 3D (three3d.js) and its General MIDI notes
+	'SCENE3D', 'RENDER3D', 'CAMERA3D', 'LIGHT3D', 'IDENTITY3D', 'TRANSLATE3D', 'ROTATE3D', 'SCALE3D', 'PUSH3D', 'POP3D', 'COLOR3D', 'TEXTURE3D', 'BLEND3D', 'DEPTH3D', 'CULL3D', 'VERTEX3D', 'CUBE3D', 'SPHERE3D', 'CYLINDER3D', 'PLANE3D', 'VIEW3D', 'MIDINOTE', 'MIDIPROGRAM', 'MIDICONTROL', 'MIDIOFF']);
 // BASIC's own French words (Onyx BASIC's bas::FRENCH): French -> English
 const FRENCH = {
 	SI: 'IF', ALORS: 'THEN', SINON: 'ELSE', SINONSI: 'ELSEIF', FIN: 'END',
@@ -110,7 +112,13 @@ const BUILTINS = {
 	FRE: [0, 1, () => 600000] };
 // The functions the screen gives (host.fn); their arguments' counts
 const HOSTFN = { 'INKEY$': [0, 0], 'INPUT$': [1, 2], POINT: [1, 2], CSRLIN: [0, 0], POS: [0, 1], KEYDOWN: [1, 1], MOUSEX: [0, 0], MOUSEY: [0, 0],
-	MOUSEB: [0, 0], PLAY: [1, 1], RGB: [3, 3], TICKS: [0, 0] };
+	MOUSEB: [0, 0], PLAY: [1, 1], RGB: [3, 3], TICKS: [0, 0],
+	// Onyx's: the 3D's textures and its GPU, the gamepads (PAD, PADS, QBasic's STICK / STRIG), the program's arguments,
+	// a file there (the files: the browser's storage, see the screen)
+	GRAB3D: [4, 4], GPU3D: [0, 0], PAD: [0, 1], PADS: [0, 1], STICK: [1, 1], STRIG: [1, 1], 'COMMAND$': [0, 0], FILEEXISTS: [1, 1] };
+
+// The files' functions, the interpreter's own (its open files)
+const FILEFN = { EOF: [1, 1], FREEFILE: [0, 0], LOF: [1, 1] };
 
 // ---- the tokens ----------------------------------------------------------------------------------------------------------
 // A word's key: upper case, its accents dropped (RÉPÉTER is REPETER)
@@ -209,7 +217,8 @@ function tokenize (src, dialect)
 
 // ---- the parser ----------------------------------------------------------------------------------------------------------
 const GFX_ONLY = ['WAIT', 'CLS', 'SCREEN', 'COLOR', 'LOCATE', 'PSET', 'PRESET', 'CIRCLE', 'PAINT', 'DRAW', 'PALETTE', 'SLEEP', 'BEEP', 'SOUND',
-	'PLAY', 'GET', 'PUT', 'FULLSCREEN', 'PAUSE', 'DRAWTEXT', 'NOTEON', 'NOTEOFF', 'WIDTH'];
+	'PLAY', 'GET', 'PUT', 'FULLSCREEN', 'PAUSE', 'DRAWTEXT', 'NOTEON', 'NOTEOFF', 'WIDTH',
+	'SCENE3D', 'RENDER3D', 'CAMERA3D', 'LIGHT3D', 'IDENTITY3D', 'TRANSLATE3D', 'ROTATE3D', 'SCALE3D', 'PUSH3D', 'POP3D', 'COLOR3D', 'TEXTURE3D', 'BLEND3D', 'DEPTH3D', 'CULL3D', 'VERTEX3D', 'CUBE3D', 'SPHERE3D', 'CYLINDER3D', 'PLANE3D', 'VIEW3D', 'MIDINOTE', 'MIDIPROGRAM', 'MIDICONTROL', 'MIDIOFF'];
 class Parser
 {
 	constructor (toks, dialect)
@@ -451,7 +460,21 @@ class Parser
 			case 'READ': { this.next (); const vars = []; do vars.push (this.lvalue ()); while (this.comma ()); return { k: 'read', vars, line }; }
 			case 'RESTORE': { this.next (); return { k: 'restore', name: this.stmtEnd () ? null : this.labelRef (line, true), line }; }
 			case 'SWAP': { this.next (); const a = this.lvalue (); this.expectOp (','); const b = this.lvalue (); return { k: 'swap', a, b, line }; }
-			case 'OPEN': case 'CLOSE': case 'KILL': case 'CHAIN': case 'SHELL': case 'FILES':
+			case 'OPEN':
+			{
+				// OPEN file$ FOR INPUT | OUTPUT | APPEND AS [#]n (the files: the host's -- the browser's storage)
+				this.next (); const path = this.expr (); this.expectKw ('FOR');
+				const m = this.next (); if (!['INPUT', 'OUTPUT', 'APPEND'].includes (m.v)) this.err ('Expected INPUT, OUTPUT or APPEND');
+				this.expectKw ('AS'); if (this.isOp ('#')) this.next ();
+				return { k: 'open', path, mode: m.v, n: this.expr (), line };
+			}
+			case 'CLOSE':
+			{
+				this.next (); const ns = [];
+				while (!this.stmtEnd ()) { if (this.isOp ('#')) this.next (); ns.push (this.expr ()); if (!this.comma ()) break; }
+				return { k: 'close', ns, line };
+			}
+			case 'KILL': case 'CHAIN': case 'SHELL': case 'FILES':
 				this.err (t.v + ' is not available here (no files in a web page)');
 			case 'VIEW': case 'WINDOW': case 'KEY': case 'PCOPY':
 				this.err (t.v + ' is not available here');
@@ -657,7 +680,8 @@ class Parser
 	printStmt ()
 	{
 		const line = this.next ().line, items = [];
-		if (this.isOp ('#')) this.err ('PRINT # is not available here (no files in a web page)');
+		let file = null;
+		if (this.isOp ('#')) { this.next (); file = this.expr (); this.expectOp (','); }	// PRINT #n, ...
 		let using = null;
 		if (this.isKw ('USING')) { this.next (); using = this.expr (); if (!this.isOp (';') && !this.isOp (',')) this.err (); this.next (); }
 		while (!this.stmtEnd ())
@@ -672,12 +696,18 @@ class Parser
 			}
 			items.push ({ e: this.expr () });
 		}
-		return { k: 'print', items, using, line };
+		return { k: 'print', items, using, file, line };
 	}
 	inputStmt (lineInput)
 	{
 		const line = this.next ().line;
-		if (this.isOp ('#')) this.err ('INPUT # is not available here (no files in a web page)');
+		if (this.isOp ('#'))						// INPUT #n, vars / LINE INPUT #n, v$
+		{
+			this.next (); const file = this.expr (); this.expectOp (',');
+			const vars = [];
+			do vars.push (this.lvalue ()); while (!lineInput && this.comma ());
+			return { k: 'finput', file, vars, lineInput, line };
+		}
 		let noNl = false, prompt = null, q = true;
 		if (this.isOp (';')) { this.next (); noNl = true; }
 		if (this.peek ().t === 'str')
@@ -884,6 +914,7 @@ class Interp
 		this.line = 0; this.base = 0; this.dataPtr = 0;
 		this.onErr = null; this.inHandler = false; this.err = 0; this.erl = 0;
 		this.sprites = new WeakMap ();		// an array -> { index -> a sprite (GET) }
+		this.files = new Map ();			// OPEN's: n -> { mode, path, lines, pos, fields, out, col }
 	}
 	get frame () { return this.frames[this.frames.length - 1]; }
 	isStrName (n) { return n.endsWith ('$'); }
@@ -916,10 +947,10 @@ class Interp
 	}
 	*run ()
 	{
-		try { yield* this.block (this.prog.body); }
+		try { yield* this.block (this.prog.body); this.closeAll (); }
 		catch (e)
 		{
-			if (e instanceof Exit) return;
+			if (e instanceof Exit) { this.closeAll (); return; }
 			if (e instanceof Jump) throw new BasicError ('Label not defined', this.line);
 			if (e instanceof GosubReturn) throw new BasicError ('RETURN without GOSUB', this.line);
 			if (e instanceof ResumeSig) throw new BasicError ('RESUME without error', this.line);
@@ -1008,14 +1039,14 @@ class Interp
 		case 'seq': return yield* this.block (s.body);
 		case 'assign':
 		{
-			const v = yield* this.eval (s.expr);
+			const v = (this.S (s.expr) ? this.ev (s.expr) : yield* this.eval (s.expr));
 			const f = this.frame;
 			if (!s.idx && f.proc && f.proc.kind === 'FUNCTION' && s.name === f.proc.name)
 			{
 				if (this.isStrName (s.name) ? typeof v !== 'string' : typeof v !== 'number') throw new BasicError ('Type mismatch', s.line);
 				f.ret = v; return null;
 			}
-			if (s.idx) { yield* this.arrayCell (s.name, s.idx, s.line, v); return null; }
+			if (s.idx) { if (this.allS (s.idx)) this.arrayCellS (s.name, s.idx, s.line, v); else yield* this.arrayCell (s.name, s.idx, s.line, v); return null; }
 			this.setVar (s.name, v, s.line);
 			return null;
 		}
@@ -1024,12 +1055,12 @@ class Interp
 			for (const c of s.conds)
 			{
 				if (c !== s.conds[0]) yield* this.stmt (c.line);
-				if (this.truth (yield* this.eval (c.cond), c.line)) return yield* this.block (c.body);
+				if (this.truth ((this.S (c.cond) ? this.ev (c.cond) : yield* this.eval (c.cond)), c.line)) return yield* this.block (c.body);
 			}
 			return s.els ? yield* this.block (s.els) : null;
 		case 'for':
 		{
-			const from = num (yield* this.eval (s.from), s.line), to = num (yield* this.eval (s.to), s.line), step = s.step ? num (yield* this.eval (s.step), s.line) : 1;
+			const from = num ((this.S (s.from) ? this.ev (s.from) : yield* this.eval (s.from)), s.line), to = num ((this.S (s.to) ? this.ev (s.to) : yield* this.eval (s.to)), s.line), step = s.step ? num ((this.S (s.step) ? this.ev (s.step) : yield* this.eval (s.step)), s.line) : 1;
 			this.setVar (s.v, from, s.line);
 			for (;;)
 			{
@@ -1046,7 +1077,7 @@ class Interp
 		case 'while':
 			for (;;)
 			{
-				if (!this.truth (yield* this.eval (s.cond), s.line)) break;
+				if (!this.truth ((this.S (s.cond) ? this.ev (s.cond) : yield* this.eval (s.cond)), s.line)) break;
 				const r = yield* this.block (s.body);
 				if (r === 'WHILE') break;
 				if (r) return r;
@@ -1056,17 +1087,17 @@ class Interp
 		case 'do':
 			for (;;)
 			{
-				if (s.pre && this.truth (yield* this.eval (s.pre.cond), s.line) === s.pre.until) break;
+				if (s.pre && this.truth ((this.S (s.pre.cond) ? this.ev (s.pre.cond) : yield* this.eval (s.pre.cond)), s.line) === s.pre.until) break;
 				const r = yield* this.block (s.body);
 				if (r === 'DO') break;
 				if (r) return r;
-				if (s.post) { yield* this.stmt (s.post.line); if (this.truth (yield* this.eval (s.post.cond), s.post.line) === s.post.until) break; }
+				if (s.post) { yield* this.stmt (s.post.line); if (this.truth ((this.S (s.post.cond) ? this.ev (s.post.cond) : yield* this.eval (s.post.cond)), s.post.line) === s.post.until) break; }
 				else yield* this.stmt (s.line);
 			}
 			return null;
 		case 'repeat':
 		{
-			const n = Math.round (num (yield* this.eval (s.n), s.line));
+			const n = Math.round (num ((this.S (s.n) ? this.ev (s.n) : yield* this.eval (s.n)), s.line));
 			for (let i = 0; i < n; i++)
 			{
 				const r = yield* this.block (s.body);
@@ -1078,14 +1109,14 @@ class Interp
 		}
 		case 'select':
 		{
-			const v = yield* this.eval (s.e);
+			const v = (this.S (s.e) ? this.ev (s.e) : yield* this.eval (s.e));
 			for (const c of s.cases)
 			{
 				let hit = false;
 				for (const t of c.tests)
 				{
-					const a = yield* this.eval (t.a);
-					if (t.op === 'TO') hit = this.compare (v, a, '>=', s.line) && this.compare (v, yield* this.eval (t.b), '<=', s.line);
+					const a = (this.S (t.a) ? this.ev (t.a) : yield* this.eval (t.a));
+					if (t.op === 'TO') hit = this.compare (v, a, '>=', s.line) && this.compare (v, (this.S (t.b) ? this.ev (t.b) : yield* this.eval (t.b)), '<=', s.line);
 					else hit = this.compare (v, a, t.op, s.line);
 					if (hit) break;
 				}
@@ -1104,7 +1135,7 @@ class Interp
 		case 'gosub': yield* this.gosub (this.target (s.name, s.line)); return null;
 		case 'on':
 		{
-			const n = Math.round (num (yield* this.eval (s.e), s.line));
+			const n = Math.round (num ((this.S (s.e) ? this.ev (s.e) : yield* this.eval (s.e)), s.line));
 			if (n < 1 || n > s.names.length) return null;
 			const t = this.target (s.names[n - 1], s.line);
 			if (s.gosub) { yield* this.gosub (t); return null; }
@@ -1112,7 +1143,7 @@ class Interp
 		}
 		case 'ontimer':
 		{
-			const sec = num (yield* this.eval (s.e), s.line);
+			const sec = num ((this.S (s.e) ? this.ev (s.e) : yield* this.eval (s.e)), s.line);
 			this.tev = { ms: Math.max (1, sec) * 1000, target: this.prog.labels[''][s.name], on: this.tev ? this.tev.on : false, next: this.now () + Math.max (1, sec) * 1000 };
 			return null;
 		}
@@ -1125,9 +1156,60 @@ class Interp
 		case 'resume':
 			if (!this.inHandler) throw new BasicError ('RESUME without error', s.line);
 			throw new ResumeSig (s.kind, s.name);
-		case 'error': { const n = Math.round (num (yield* this.eval (s.e), s.line)); throw new BasicError ('Error ' + n, s.line, n); }
+		case 'error': { const n = Math.round (num ((this.S (s.e) ? this.ev (s.e) : yield* this.eval (s.e)), s.line)); throw new BasicError ('Error ' + n, s.line, n); }
 		case 'end': throw new Exit ('END');
 		case 'print': yield* this.print (s); return null;
+		case 'open':
+		{
+			const path = str ((this.S (s.path) ? this.ev (s.path) : yield* this.eval (s.path)), s.line), n = Math.round (num ((this.S (s.n) ? this.ev (s.n) : yield* this.eval (s.n)), s.line));
+			if (n < 1 || n > 255) throw new BasicError ('Bad file name or number', s.line);
+			if (this.files.has (n)) throw new BasicError ('File already open', s.line);
+			if (!this.host.readFile) throw new BasicError ('OPEN is not available here (no files)', s.line);
+			const f = { mode: s.mode, path, lines: [], pos: 0, fields: [], out: '', col: 1, text: '' };
+			if (s.mode === 'INPUT')
+			{
+				const t = this.host.readFile (path);
+				if (t === null || t === undefined) throw new BasicError ('File not found', s.line);
+				f.text = t; f.lines = t.replace (/\r/g, '').split ('\n');
+				if (f.lines.length && f.lines[f.lines.length - 1] === '') f.lines.pop ();
+			}
+			else if (s.mode === 'APPEND') { const t = this.host.readFile (path); f.out = t || ''; }
+			this.files.set (n, f);
+			return null;
+		}
+		case 'close':
+		{
+			const ns = [];
+			for (const e of s.ns) ns.push (Math.round (num ((this.S (e) ? this.ev (e) : yield* this.eval (e)), s.line)));
+			for (const n of ns.length ? ns : [...this.files.keys ()]) this.closeFile (n, s.line);
+			return null;
+		}
+		case 'finput':
+		{
+			const f = this.file (num ((this.S (s.file) ? this.ev (s.file) : yield* this.eval (s.file)), s.line), s.line);
+			if (f.mode !== 'INPUT') throw new BasicError ('Bad file mode', s.line);
+			if (s.lineInput)
+			{
+				if (f.pos >= f.lines.length) throw new BasicError ('Input past end of file', s.line);
+				f.fields = [];
+				yield* this.setLv (s.vars[0], f.lines[f.pos++], s.line);
+				return null;
+			}
+			for (const v of s.vars)
+			{
+				if (!f.fields.length)
+				{
+					if (f.pos >= f.lines.length) throw new BasicError ('Input past end of file', s.line);
+					const re = /\s*("([^"]*)"|[^,]*)\s*(,|$)/g, ln = f.lines[f.pos++];
+					let m;
+					while ((m = re.exec (ln))) { f.fields.push (m[2] !== undefined ? m[2] : m[1].trim ()); if (!m[3]) break; }
+				}
+				const it = f.fields.shift ();
+				if (this.lvIsStr (v)) yield* this.setLv (v, it, s.line);
+				else { const x = it === '' ? 0 : Number (it); yield* this.setLv (v, isNaN (x) ? 0 : x, s.line); }
+			}
+			return null;
+		}
 		case 'input': yield* this.input (s); return null;
 		case 'dim':
 			for (const d of s.decls)
@@ -1143,7 +1225,7 @@ class Interp
 						const lo = [], dims = [];
 						for (const r of d.dims)
 						{
-							const l = r.lo ? Math.round (num (yield* this.eval (r.lo), s.line)) : this.base, h = Math.round (num (yield* this.eval (r.hi), s.line));
+							const l = r.lo ? Math.round (num ((this.S (r.lo) ? this.ev (r.lo) : yield* this.eval (r.lo)), s.line)) : this.base, h = Math.round (num ((this.S (r.hi) ? this.ev (r.hi) : yield* this.eval (r.hi)), s.line));
 							if (h < l || h - l > 1000000) throw new BasicError ('Subscript out of range', s.line);
 							lo.push (l); dims.push (h - l + 1);
 						}
@@ -1165,7 +1247,7 @@ class Interp
 			return null;
 		case 'const':
 			if (this.consts.has (s.name)) throw new BasicError ('Duplicate definition', s.line);
-			this.consts.set (s.name, yield* this.eval (s.expr));
+			this.consts.set (s.name, (this.S (s.expr) ? this.ev (s.expr) : yield* this.eval (s.expr)));
 			return null;
 		case 'base': this.base = s.n | 0; return null;
 		case 'read':
@@ -1176,7 +1258,7 @@ class Interp
 				const isStr = this.lvIsStr (v);
 				let val;
 				if (isStr) val = it.v;
-				else { if (it.q) throw new BasicError ('Type mismatch', s.line); val = it.v === '' ? 0 : Number (it.v); if (isNaN (val)) throw new BasicError ('Syntax error', s.line); }
+				else { if (it.q) throw new BasicError ('Type mismatch', s.line); const h = /^&([HhOo])([0-9A-Fa-f]+)$/.exec (it.v); val = it.v === '' ? 0 : h ? parseInt (h[2], /[Hh]/.test (h[1]) ? 16 : 8) : Number (it.v); if (isNaN (val)) throw new BasicError ('Syntax error', s.line); }
 				yield* this.setLv (v, val, s.line);
 			}
 			return null;
@@ -1191,6 +1273,20 @@ class Interp
 		case 'gfx': yield* this.gfx (s); return null;
 		}
 		return null;
+	}
+	file (n, line)
+	{
+		const f = this.files.get (Math.round (n));
+		if (!f) throw new BasicError ('Bad file name or number', line);
+		return f;
+	}
+	closeAll () { for (const n of [...this.files.keys ()]) { try { this.closeFile (n, this.line); } catch (e) { /* (the end: nothing more to say) */ } } }
+	closeFile (n, line)
+	{
+		const f = this.files.get (n);
+		if (!f) return;
+		this.files.delete (n);
+		if (f.mode !== 'INPUT' && this.host.writeFile && !this.host.writeFile (f.path, f.out)) throw new BasicError ('Path/File access error', line);
 	}
 	lvIsStr (v) { if (v.idx) { const a = this.scopeOf (v.name).get (v.name); return a && a.arr ? a.isStr : this.isStrName (v.name); } const x = this.getVar (v.name); return typeof x === 'string'; }
 	*getLv (v, line) { return v.idx ? yield* this.arrayCell (v.name, v.idx, line) : this.getVar (v.name); }
@@ -1224,7 +1320,7 @@ class Interp
 		let k = 0;
 		for (let i = 0; i < idx.length; i++)
 		{
-			const v = Math.round (num (yield* this.eval (idx[i]), line)) - a.lo[i];
+			const v = Math.round (num ((this.S (idx[i]) ? this.ev (idx[i]) : yield* this.eval (idx[i])), line)) - a.lo[i];
 			if (v < 0 || v >= a.dims[i]) throw new BasicError ('Subscript out of range', line);
 			k = k * a.dims[i] + v;
 		}
@@ -1242,7 +1338,7 @@ class Interp
 			const w = d.words[name];
 			if (inExpr && w.kind === 's') throw new BasicError ('Type mismatch', line);
 			const args = [];
-			for (const e of argExprs) args.push (yield* this.eval (e));
+			for (const e of argExprs) args.push ((this.S (e) ? this.ev (e) : yield* this.eval (e)));
 			if (args.length < w.min || args.length > w.max) throw new BasicError ('Wrong number of arguments', line);
 			for (const a of args) num (a, line);
 			const r = this.host.ext (name, args);
@@ -1279,7 +1375,7 @@ class Interp
 					if (this.isStrName (pr.name) ? typeof v !== 'string' : typeof v !== 'number') throw new BasicError ('Type mismatch', line);
 					continue;
 				}
-				const v = yield* this.eval (e);
+				const v = (this.S (e) ? this.ev (e) : yield* this.eval (e));
 				if (this.isStrName (pr.name) ? typeof v !== 'string' : typeof v !== 'number') throw new BasicError ('Type mismatch', line);
 				vars.set (pr.name, v);
 			}
@@ -1297,7 +1393,7 @@ class Interp
 			if (asStmt) throw new BasicError ('Syntax error', line);
 			if (argExprs.length < mn || argExprs.length > mx) throw new BasicError ('Wrong number of arguments', line);
 			const args = [];
-			for (const e of argExprs) args.push (yield* this.eval (e));
+			for (const e of argExprs) args.push ((this.S (e) ? this.ev (e) : yield* this.eval (e)));
 			try
 			{
 				if (fn) return fn (args, line);
@@ -1307,13 +1403,22 @@ class Interp
 			}
 			catch (e) { if (e instanceof BasicError && !e.line) e.line = line; throw e; }
 		}
+		if (FILEFN[name])
+		{
+			if (asStmt) throw new BasicError ('Syntax error', line);
+			if (argExprs.length < FILEFN[name][0] || argExprs.length > FILEFN[name][1]) throw new BasicError ('Wrong number of arguments', line);
+			if (name === 'FREEFILE') { let n = 1; while (this.files.has (n)) n++; return n; }
+			const f = this.file (num ((this.S (argExprs[0]) ? this.ev (argExprs[0]) : yield* this.eval (argExprs[0])), line), line);
+			if (name === 'LOF') return f.mode === 'INPUT' ? f.text.length : f.out.length;
+			return f.mode === 'INPUT' && f.pos >= f.lines.length && !f.fields.length ? -1 : 0;
+		}
 		if (name === 'ERR' && !argExprs.length) return this.err;
 		if (name === 'ERL' && !argExprs.length) return this.erl;
 		if ((name === 'LBOUND' || name === 'UBOUND') && argExprs.length >= 1 && argExprs[0].k === 'ref')
 		{
 			const a = this.arrayOf (argExprs[0].name, 1, line);
 			if (!a) throw new BasicError ('Type mismatch', line);
-			const dim = argExprs.length > 1 ? Math.round (num (yield* this.eval (argExprs[1]), line)) - 1 : 0;
+			const dim = argExprs.length > 1 ? Math.round (num ((this.S (argExprs[1]) ? this.ev (argExprs[1]) : yield* this.eval (argExprs[1])), line)) - 1 : 0;
 			if (dim < 0 || dim >= a.dims.length) throw new BasicError ('Subscript out of range', line);
 			return name === 'LBOUND' ? a.lo[dim] : a.lo[dim] + a.dims[dim] - 1;
 		}
@@ -1330,6 +1435,112 @@ class Interp
 		case '<': return a < b; case '>': return a > b; case '<=': return a <= b; case '>=': return a >= b;
 		}
 		return false;
+	}
+	// ---- the fast path: an expression that calls no procedure (nor waits) is evaluated without generators -- most of
+	// them; S (e) says it (worked out once, kept on the node)
+	S (e) { const v = e._s; return v !== undefined ? v : (e._s = this.canSync (e)); }
+	allS (list) { for (const x of list) if (!this.S (x)) return false; return true; }
+	canSync (e)
+	{
+		switch (e.k)
+		{
+		case 'num': case 'str': return true;
+		case 'un': return this.S (e.a);
+		case 'bin': return this.S (e.a) && this.S (e.b);
+		case 'ref':
+		{
+			const n = e.name, d = this.dialect;
+			if ((d.words && d.words[n]) || this.prog.procs[n] || FILEFN[n] || n === 'INPUT$') return false;
+			if (HOSTFN[n] && !this.host.fn) return false;
+			return this.allS (e.args);
+		}
+		}
+		return false;
+	}
+	ev (e)
+	{
+		switch (e.k)
+		{
+		case 'num': case 'str': return e.v;
+		case 'ref':
+		{
+			const n = e.name;
+			if (e.parens)
+			{
+				let a = this.scopeOf (n).get (n);
+				if (a && a.ref) a = a.scope.get (a.name);
+				if (a && a.arr) return this.arrayCellS (n, e.args, e.line);
+				if (BUILTINS[n] || HOSTFN[n] || n === 'LBOUND' || n === 'UBOUND' || !this.qb) return this.callS (n, e.args, e.line);
+				return this.arrayCellS (n, e.args, e.line);
+			}
+			if ((BUILTINS[n] && BUILTINS[n][0] === 0) || (HOSTFN[n] && HOSTFN[n][0] === 0)) return this.callS (n, [], e.line);
+			if (n === 'ERR' || n === 'ERL') return n === 'ERR' ? this.err : this.erl;
+			const v = this.getVar (n);
+			if (v && v.arr) throw new BasicError ('Type mismatch', e.line);
+			return v;
+		}
+		case 'un': { const a = num (this.ev (e.a), this.line); return e.op === '-' ? -a : ~Math.round (a); }
+		case 'bin':
+		{
+			const op = e.op, a = this.ev (e.a), b = this.ev (e.b);
+			if (op === '=' || op === '<>' || op === '<' || op === '>' || op === '<=' || op === '>=') return this.compare (a, b, op, this.line) ? -1 : 0;
+			if (op === '+' && typeof a === 'string') return a + str (b, this.line);
+			const x = num (a, this.line), y = num (b, this.line);
+			switch (op)
+			{
+			case '+': return x + y;
+			case '-': return x - y;
+			case '*': return x * y;
+			case '/': if (y === 0) throw new BasicError ('Division by zero', this.line); return x / y;
+			case '\\': { const q = Math.round (y); if (q === 0) throw new BasicError ('Division by zero', this.line); return Math.trunc (Math.round (x) / q); }
+			case 'MOD': { const p = Math.round (x), q = Math.round (y); if (q === 0) throw new BasicError ('Division by zero', this.line); return p % q; }
+			case '^': return Math.pow (x, y);
+			case 'AND': return Math.round (x) & Math.round (y);
+			case 'OR': return Math.round (x) | Math.round (y);
+			case 'XOR': return Math.round (x) ^ Math.round (y);
+			case 'EQV': return ~(Math.round (x) ^ Math.round (y));
+			case 'IMP': return ~Math.round (x) | Math.round (y);
+			}
+		}
+		}
+		throw new BasicError ('Syntax error', this.line);
+	}
+	// a built-in or the host's function, its arguments evaluated at once (S (e) said none waits)
+	callS (name, argExprs, line)
+	{
+		if ((name === 'LBOUND' || name === 'UBOUND') && argExprs.length >= 1 && argExprs[0].k === 'ref')
+		{
+			const a = this.arrayOf (argExprs[0].name, 1, line);
+			if (!a) throw new BasicError ('Type mismatch', line);
+			const dim = argExprs.length > 1 ? Math.round (num (this.ev (argExprs[1]), line)) - 1 : 0;
+			if (dim < 0 || dim >= a.dims.length) throw new BasicError ('Subscript out of range', line);
+			return name === 'LBOUND' ? a.lo[dim] : a.lo[dim] + a.dims[dim] - 1;
+		}
+		const B = BUILTINS[name] || (this.host.fn && HOSTFN[name]);
+		if (!B) throw new BasicError ('Sub or function not defined: ' + name, line);
+		const [mn, mx, fn] = B;
+		if (argExprs.length < mn || argExprs.length > mx) throw new BasicError ('Wrong number of arguments', line);
+		const args = [];
+		for (const x of argExprs) args.push (this.ev (x));
+		try { return fn ? fn (args, line) : this.host.fn (name, args); }
+		catch (err) { if (err instanceof BasicError && !err.line) err.line = line; throw err; }
+	}
+	arrayCellS (name, idx, line, set)
+	{
+		const a = this.arrayOf (name, idx.length, line);
+		if (!a) throw new BasicError ('Sub or function not defined: ' + name, line);
+		if (idx.length !== a.dims.length) throw new BasicError ('Wrong number of dimensions', line);
+		let k = 0;
+		for (let i = 0; i < idx.length; i++)
+		{
+			const v = Math.round (num (this.ev (idx[i]), line)) - a.lo[i];
+			if (v < 0 || v >= a.dims[i]) throw new BasicError ('Subscript out of range', line);
+			k = k * a.dims[i] + v;
+		}
+		if (set === undefined) return a.data[k];
+		if (typeof set !== typeof a.data[k]) throw new BasicError ('Type mismatch', line);
+		a.data[k] = set;
+		return set;
 	}
 	*eval (e)
 	{
@@ -1354,11 +1565,11 @@ class Interp
 				let a = this.scopeOf (n).get (n);
 				if (a && a.ref) a = a.scope.get (a.name);
 				if (a && a.arr) return yield* this.arrayCell (n, e.args, e.line);
-				if (BUILTINS[n] || HOSTFN[n] || n === 'LBOUND' || n === 'UBOUND' || p || !this.qb) return yield* this.call (n, e.args, e.line, true, false);
+				if (BUILTINS[n] || HOSTFN[n] || FILEFN[n] || n === 'LBOUND' || n === 'UBOUND' || p || !this.qb) return yield* this.call (n, e.args, e.line, true, false);
 				return yield* this.arrayCell (n, e.args, e.line);
 			}
 			if (p) throw new BasicError ('Type mismatch', e.line);
-			if ((BUILTINS[n] && BUILTINS[n][0] === 0) || (HOSTFN[n] && HOSTFN[n][0] === 0 && this.host.fn)) return yield* this.call (n, [], e.line, true, false);
+			if ((BUILTINS[n] && BUILTINS[n][0] === 0) || (HOSTFN[n] && HOSTFN[n][0] === 0 && this.host.fn) || n === 'FREEFILE') return yield* this.call (n, [], e.line, true, false);
 			if (n === 'ERR' || n === 'ERL') return n === 'ERR' ? this.err : this.erl;
 			const v = this.getVar (n);
 			if (v && v.arr) throw new BasicError ('Type mismatch', e.line);
@@ -1366,13 +1577,13 @@ class Interp
 		}
 		case 'un':
 		{
-			const a = num (yield* this.eval (e.a), this.line);
+			const a = num ((this.S (e.a) ? this.ev (e.a) : yield* this.eval (e.a)), this.line);
 			return e.op === '-' ? -a : ~Math.round (a);
 		}
 		case 'bin':
 		{
 			const op = e.op;
-			const a = yield* this.eval (e.a), b = yield* this.eval (e.b);
+			const a = (this.S (e.a) ? this.ev (e.a) : yield* this.eval (e.a)), b = (this.S (e.b) ? this.ev (e.b) : yield* this.eval (e.b));
 			if (op === '=' || op === '<>' || op === '<' || op === '>' || op === '<=' || op === '>=') return this.compare (a, b, op, this.line) ? -1 : 0;
 			if (op === '+' && typeof a === 'string') return a + str (b, this.line);
 			const x = num (a, this.line), y = num (b, this.line);
@@ -1406,16 +1617,25 @@ class Interp
 	}
 	*print (s)
 	{
+		if (s.file)
+		{
+			const f = this.file (num ((this.S (s.file) ? this.ev (s.file) : yield* this.eval (s.file)), s.line), s.line);
+			if (f.mode === 'INPUT') throw new BasicError ('Bad file mode', s.line);
+			this.out = (t) => { f.out += t; const nl = t.lastIndexOf ('\n'); f.col = nl >= 0 ? t.length - nl : f.col + t.length; };
+			this.pos = () => f.col;
+			try { return yield* this.print (Object.assign ({}, s, { file: null })); }
+			finally { delete this.out; delete this.pos; }
+		}
 		let nl = true;
-		const fmt = s.using ? str (yield* this.eval (s.using), s.line) : null;
+		const fmt = s.using ? str ((this.S (s.using) ? this.ev (s.using) : yield* this.eval (s.using)), s.line) : null;
 		const vals = [];
 		for (const it of s.items)
 		{
 			if (it.sep === ';') { nl = false; continue; }
 			if (it.sep === ',') { if (!fmt) { const p = this.pos () - 1; this.out (' '.repeat (14 - (p % 14))); } nl = false; continue; }
-			if (it.tab) { const n = Math.round (num (yield* this.eval (it.tab), s.line)), p = this.pos (); if (n > p) this.out (' '.repeat (n - p)); else if (n < p) { this.out ('\n'); if (n > 1) this.out (' '.repeat (n - 1)); } nl = false; continue; }
-			if (it.spc) { this.out (' '.repeat (Math.max (0, Math.round (num (yield* this.eval (it.spc), s.line))))); nl = false; continue; }
-			const v = yield* this.eval (it.e);
+			if (it.tab) { const n = Math.round (num ((this.S (it.tab) ? this.ev (it.tab) : yield* this.eval (it.tab)), s.line)), p = this.pos (); if (n > p) this.out (' '.repeat (n - p)); else if (n < p) { this.out ('\n'); if (n > 1) this.out (' '.repeat (n - 1)); } nl = false; continue; }
+			if (it.spc) { this.out (' '.repeat (Math.max (0, Math.round (num ((this.S (it.spc) ? this.ev (it.spc) : yield* this.eval (it.spc)), s.line))))); nl = false; continue; }
+			const v = (this.S (it.e) ? this.ev (it.e) : yield* this.eval (it.e));
 			if (fmt) vals.push (v);
 			else this.out (typeof v === 'number' ? (v >= 0 ? ' ' : '') + fmtNum (v) + ' ' : v);
 			nl = true;
@@ -1454,19 +1674,19 @@ class Interp
 	{
 		const h = this.host;
 		if (!h.gfx) throw new BasicError (s.op + ' is not available here', s.line);
-		const ev = function* (self, e) { return e === null || e === undefined ? null : yield* self.eval (e); };
-		const pt = function* (self, p) { return p ? { step: p.step, x: num (yield* self.eval (p.x), s.line), y: num (yield* self.eval (p.y), s.line) } : null; };
+		const ev = function* (self, e) { return e === null || e === undefined ? null : (self.S (e) ? self.ev (e) : yield* self.eval (e)); };
+		const pt = function* (self, p) { return p ? { step: p.step, x: num ((self.S (p.x) ? self.ev (p.x) : yield* self.eval (p.x)), s.line), y: num ((self.S (p.y) ? self.ev (p.y) : yield* self.eval (p.y)), s.line) } : null; };
 		let a;
 		switch (s.op)
 		{
 		case 'LINE': a = { a: yield* pt (this, s.a), b: yield* pt (this, s.b), c: yield* ev (this, s.c), box: s.box, style: yield* ev (this, s.style) }; break;
 		case 'PSET': case 'PRESET': a = { p: yield* pt (this, s.p), c: yield* ev (this, s.c) }; break;
-		case 'CIRCLE': { const rest = []; let fill = false; for (const r of s.rest) { if (r && r.fill) fill = true; else rest.push (yield* ev (this, r)); } a = { p: yield* pt (this, s.p), r: num (yield* this.eval (s.r), s.line), c: rest[0], start: rest[1], end: rest[2], aspect: rest[3], fill }; break; }
+		case 'CIRCLE': { const rest = []; let fill = false; for (const r of s.rest) { if (r && r.fill) fill = true; else rest.push (yield* ev (this, r)); } a = { p: yield* pt (this, s.p), r: num ((this.S (s.r) ? this.ev (s.r) : yield* this.eval (s.r)), s.line), c: rest[0], start: rest[1], end: rest[2], aspect: rest[3], fill }; break; }
 		case 'PAINT': { const rest = []; for (const r of s.rest) rest.push (yield* ev (this, r)); a = { p: yield* pt (this, s.p), c: rest[0], border: rest[1] }; break; }
 		case 'GET':
 		{
 			const arr = this.arrayOf (s.v.name, 1, s.line); if (!arr) throw new BasicError ('Type mismatch', s.line);
-			const at = s.v.idx ? Math.round (num (yield* this.eval (s.v.idx[0]), s.line)) : 0;
+			const at = s.v.idx ? Math.round (num ((this.S (s.v.idx[0]) ? this.ev (s.v.idx[0]) : yield* this.eval (s.v.idx[0])), s.line)) : 0;
 			const spr = h.gfx ('GET', { a: yield* pt (this, s.a), b: yield* pt (this, s.b) });
 			let m = this.sprites.get (arr); if (!m) this.sprites.set (arr, m = new Map ());
 			m.set (at, spr);
@@ -1475,13 +1695,13 @@ class Interp
 		case 'PUT':
 		{
 			const arr = this.arrayOf (s.v.name, 1, s.line); if (!arr) throw new BasicError ('Type mismatch', s.line);
-			const at = s.v.idx ? Math.round (num (yield* this.eval (s.v.idx[0]), s.line)) : 0;
+			const at = s.v.idx ? Math.round (num ((this.S (s.v.idx[0]) ? this.ev (s.v.idx[0]) : yield* this.eval (s.v.idx[0])), s.line)) : 0;
 			const m = this.sprites.get (arr), spr = m && m.get (at);
 			if (!spr) throw new BasicError ('Illegal function call', s.line);
 			a = { p: yield* pt (this, s.p), spr, mode: s.mode };
 			break;
 		}
-		default: { a = []; for (const e of s.args) a.push (yield* ev (this, e)); }
+		default: { a = []; for (const e of s.args) a.push (e === null || e === undefined ? null : this.S (e) ? this.ev (e) : yield* this.eval (e)); }
 		}
 		let r;
 		try { r = h.gfx (s.op, a); }

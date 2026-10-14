@@ -678,6 +678,8 @@ function renderExamples ()
 	MY_EXAMPLES.forEach ((x, i) => { h += '<option value="m' + i + '">' + Site.esc (x.title[Site.L]) + '</option>'; });
 	const ONYX = { 'hello.bas': ['Hello, world (Onyx)', 'Hello, world (Onyx)'], 'guess.bas': ['Guess the number (Onyx)', 'Devine le nombre (Onyx)'],
 		'graphics.bas': ['Lines and circles (Onyx)', 'Lignes et cercles (Onyx)'], 'arkanoid.bas': ['Arkanoid, a brick breaker (Onyx)', 'Arkanoid, un casse-briques (Onyx)'],
+		'planets3d.bas': ['Planets in 3D (Onyx)', 'Des planètes en 3D (Onyx)'],
+		'antigrav.bas': ['Antigrav, an anti-gravity racer in 3D, 1 to 4 players (Onyx)', 'Antigrav, une course antigravité en 3D, 1 à 4 joueurs (Onyx)'],
 		'invaders.bas': ['Space Invaders', 'Space Invaders'], 'amanda.bas': ['Amanda, a friend to talk to, in French (Rémi Poulin, 2001)', 'Amanda, une amie qui parle (Rémi Poulin, 2001)'] };
 	(window.ONYX_EXAMPLES || []).forEach ((x, i) => { h += '<option value="o' + i + '">' + Site.esc ((ONYX[x.name] || [x.name, x.name])[Site.L]) + '</option>'; });
 	$('examples').innerHTML = h;

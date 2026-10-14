@@ -345,22 +345,92 @@ class Sound
 		return this.bg ? 0 : Math.round ((t - start) * 1000);
 	}
 	queued () { const ac = this.ac; if (!ac) return 0; const now = ac.currentTime; this.notes = this.notes.filter ((e) => e > now); return this.notes.length; }
+	// a second of white noise, made once (NOTEON's wave 4, the drums)
+	noise ()
+	{
+		const ac = this.ac;
+		if (!this.noiseBuf) { const b = ac.createBuffer (1, ac.sampleRate, ac.sampleRate), d = b.getChannelData (0); for (let i = 0; i < d.length; i++) d[i] = Math.random () * 2 - 1; this.noiseBuf = b; }
+		const n = ac.createBufferSource (); n.buffer = this.noiseBuf; n.loop = true;
+		return n;
+	}
+	// NOTEON voice, Hz [, wave 0 square 1 sine 2 triangle 3 saw 4 noise [, volume 0..255]] (Onyx's)
 	noteOn (v, f, wave, vol)
 	{
 		const ac = this.ctx (); if (!ac) return;
 		this.noteOff (v);
-		const o = ac.createOscillator (), g = ac.createGain ();
-		o.type = ['square', 'sine', 'triangle', 'sawtooth'][(wave | 0) & 3]; o.frequency.value = f;
-		g.gain.value = vol === null || vol === undefined ? 0.8 : Math.max (0, Math.min (1, vol / 127));
-		o.connect (g); g.connect (this.master); o.start ();
+		const g = ac.createGain ();
+		g.gain.value = vol === null || vol === undefined ? 0.8 : Math.max (0, Math.min (1, vol / 255));
+		let o;
+		if ((wave | 0) === 4)
+		{
+			o = this.noise ();
+			const bp = ac.createBiquadFilter (); bp.type = 'bandpass'; bp.frequency.value = Math.max (40, Math.min (12000, f * 8)); bp.Q.value = 0.7;
+			o.connect (bp); bp.connect (g);
+		}
+		else { o = ac.createOscillator (); o.type = ['square', 'sine', 'triangle', 'sawtooth'][(wave | 0) & 3]; o.frequency.value = f; o.connect (g); }
+		g.connect (this.master); o.start ();
 		this.voices[v] = o;
 	}
+	// ---- MIDINOTE / MIDIPROGRAM / MIDICONTROL / MIDIOFF: Onyx's General MIDI synthesizer, in the browser a small
+	// one of its own -- the instruments by their families (pianos, basses, leads, pads...), the drums of channel 10
+	// (9 counted from 0) synthesized: kick, snare, clap, hi-hats, cymbals
+	midiNote (ch, key, vel)
+	{
+		const ac = this.ctx (); if (!ac) return;
+		this.mch = this.mch || {}; this.mon = this.mon || {};
+		const C = this.mch[ch] || (this.mch[ch] = { prog: 0, vol: 100 }), id = ch * 128 + key;
+		if (this.mon[id]) { const m = this.mon[id]; delete this.mon[id]; const t = ac.currentTime; try { m.g.gain.cancelScheduledValues (t); m.g.gain.setValueAtTime (m.g.gain.value, t); m.g.gain.linearRampToValueAtTime (0, t + m.rel); m.src.forEach ((o) => o.stop (t + m.rel + 0.05)); } catch (e) { /* (ended) */ } }
+		if (!vel) return;
+		const t = ac.currentTime, amp = (vel / 127) * (C.vol / 127) * 0.6;
+		if (ch === 9) { this.drum (key, amp, t); return; }
+		const f = 440 * Math.pow (2, (key - 69) / 12), p = C.prog;
+		const fam = p >> 3;			// GM's families of eight: 0 pianos, 4 basses, 10 leads, 11 pads...
+		const g = ac.createGain (), out = g, src = [];
+		let wave = 'triangle', att = 0.01, rel = 0.12, cut = 0;
+		if (fam === 4) { wave = 'sawtooth'; cut = 700; rel = 0.08; }
+		else if (fam === 10) { wave = p === 80 ? 'square' : 'sawtooth'; cut = 2600; }
+		else if (fam === 11) { wave = 'sawtooth'; att = 0.35; rel = 0.6; cut = 1200; }
+		else if (fam === 0 || fam === 1) { wave = 'triangle'; rel = 0.3; }
+		else if (fam === 7 || fam === 9) { wave = 'square'; cut = 3000; }
+		const o = ac.createOscillator (); o.type = wave; o.frequency.value = f;
+		let node = o;
+		if (cut) { const lp = ac.createBiquadFilter (); lp.type = 'lowpass'; lp.frequency.value = cut; o.connect (lp); node = lp; }
+		if (fam === 11) { const o2 = ac.createOscillator (); o2.type = wave; o2.frequency.value = f * 1.006; o2.connect (cut ? node : g); o2.start (t); src.push (o2); }
+		node.connect (g);
+		g.gain.setValueAtTime (0, t); g.gain.linearRampToValueAtTime (amp, t + att);
+		if (fam === 0 || fam === 1) g.gain.exponentialRampToValueAtTime (Math.max (0.0005, amp * 0.25), t + 1.2);
+		out.connect (this.master); o.start (t); src.push (o);
+		this.mon[id] = { g, src, rel };
+	}
+	drum (key, amp, t)
+	{
+		const ac = this.ac, g = ac.createGain ();
+		g.connect (this.master);
+		const env = (len) => { g.gain.setValueAtTime (amp, t); g.gain.exponentialRampToValueAtTime (0.001, t + len); };
+		if (key === 35 || key === 36)		// the kick: a sine falling fast
+		{
+			const o = ac.createOscillator (); o.frequency.setValueAtTime (150, t); o.frequency.exponentialRampToValueAtTime (40, t + 0.25);
+			o.connect (g); env (0.3); g.gain.setValueAtTime (amp * 1.6, t); o.start (t); o.stop (t + 0.32); return;
+		}
+		const n = this.noise (), f = ac.createBiquadFilter ();
+		let len = 0.1;
+		if (key === 38 || key === 40) { f.type = 'bandpass'; f.frequency.value = 1800; len = 0.18; const o = ac.createOscillator (); o.type = 'triangle'; o.frequency.value = 185; const og = ac.createGain (); og.gain.setValueAtTime (amp, t); og.gain.exponentialRampToValueAtTime (0.001, t + 0.12); o.connect (og); og.connect (this.master); o.start (t); o.stop (t + 0.14); }
+		else if (key === 39) { f.type = 'bandpass'; f.frequency.value = 1200; len = 0.15; }
+		else if (key === 42 || key === 44) { f.type = 'highpass'; f.frequency.value = 7000; len = 0.05; }
+		else if (key === 46) { f.type = 'highpass'; f.frequency.value = 6000; len = 0.3; }
+		else if (key === 49 || key === 57 || key === 51 || key === 59) { f.type = 'highpass'; f.frequency.value = 5000; len = 1.0; }
+		else { f.type = 'bandpass'; f.frequency.value = 400 + (key % 12) * 200; len = 0.12; }
+		n.connect (f); f.connect (g); env (len); n.start (t); n.stop (t + len + 0.02);
+	}
+	midiProgram (ch, p) { this.mch = this.mch || {}; (this.mch[ch] || (this.mch[ch] = { prog: 0, vol: 100 })).prog = p & 127; }
+	midiControl (ch, c, v) { this.mch = this.mch || {}; const C = this.mch[ch] || (this.mch[ch] = { prog: 0, vol: 100 }); if (c === 7) C.vol = Math.max (0, Math.min (127, v)); }
+	midiOff () { for (const id of Object.keys (this.mon || {})) { const m = this.mon[id]; try { m.src.forEach ((o) => o.stop ()); } catch (e) { /* (ended) */ } } this.mon = {}; }
 	noteOff (v)
 	{
 		const off = (k) => { try { this.voices[k].stop (); } catch (e) { /* (stopped) */ } delete this.voices[k]; };
 		if (v === null || v === undefined) Object.keys (this.voices).forEach (off); else if (this.voices[v]) off (v);
 	}
-	stop () { this.noteOff (); this.notes = []; this.end = 0; if (this.ac) { this.master.disconnect (); this.master = this.ac.createGain (); this.master.gain.value = 0.12; this.master.connect (this.ac.destination); } this.bg = false; this.tempo = 120; this.len = 4; this.oct = 4; this.art = 7 / 8; }
+	stop () { this.noteOff (); this.midiOff (); this.mch = {}; this.notes = []; this.end = 0; if (this.ac) { this.master.disconnect (); this.master = this.ac.createGain (); this.master.gain.value = 0.12; this.master.connect (this.ac.destination); } this.bg = false; this.tempo = 120; this.len = 4; this.oct = 4; this.art = 7 / 8; }
 }
 
 // ---- the keys: INKEY$'s codes, KEYDOWN's names -----------------------------------------------------------------------
@@ -398,6 +468,7 @@ class Computer
 		this.keys = []; this.held = new Set (); this.mouse = { x: 0, y: 0, b: 0 };
 		this.gen = null; this.wait = null; this.timer = 0; this.raf = 0;
 		this.turtle = null;
+		this.r3 = new global.Basic3D.Render3D ();		// (the 3D's state: made again at each run)
 		this.cv = canvas;
 		const pos = (e) => { const r = canvas.getBoundingClientRect (); this.mouse.x = Math.floor ((e.clientX - r.left) * this.screen.W / r.width); this.mouse.y = Math.floor ((e.clientY - r.top) * this.screen.H / r.height); };
 		canvas.addEventListener ('pointerdown', (e) => { pos (e); this.mouse.b |= e.button === 2 ? 2 : 1; canvas.focus ({ preventScroll: true }); if (this.wait && this.wait.wait === 'line' && this.opts.onNeedKeyboard) this.opts.onNeedKeyboard (); });
@@ -439,6 +510,8 @@ class Computer
 		this.sound.ctx ();
 		this.keys = []; this.held.clear ();
 		this.turtle = null;
+		this.r3 = new global.Basic3D.Render3D ();		// (the 3D: a new state for each run)
+		this.r3.forceSoft = !!this.opts.soft3d;
 		this.t0 = performance.now ();
 		this.statements = 0; this.sliceStart = performance.now ();
 		this.gen = Basic.start (prog, this.host (), dialect);
@@ -504,6 +577,51 @@ class Computer
 			g.restore ();
 		}
 	}
+	// ---- the gamepads (the browser's Gamepad API, its standard layout) as Onyx's PAD bits: 1 up, 2 down, 4 left,
+	// 8 right, 16 A (bottom), 32 B, 64 X, 128 Y, 256 L, 512 R, 1024 L2, 2048 R2, 4096 Select, 8192 Start, 16384 L3,
+	// 32768 R3, 65536 Home; the left stick moves the d-pad too. Pad n: the n-th one plugged in.
+	pads ()
+	{
+		const all = typeof navigator !== 'undefined' && navigator.getGamepads ? Array.from (navigator.getGamepads () || []) : [];
+		return all.filter ((g) => g && g.connected);
+	}
+	padBits (g)
+	{
+		if (!g) return 0;
+		const BIT = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 1, 2, 4, 8, 65536];
+		let b = 0;
+		g.buttons.forEach ((k, i) => { if (i < BIT.length && (k.pressed || k.value > 0.5)) b |= BIT[i]; });
+		const x = g.axes[0] || 0, y = g.axes[1] || 0;
+		if (x < -0.5) b |= 4; if (x > 0.5) b |= 8; if (y < -0.5) b |= 1; if (y > 0.5) b |= 2;
+		return b;
+	}
+	// ---- the files: in the browser's storage (localStorage), by their path; SD:/etc/system.ini says the page's language
+	fileKey (path) { return 'codeisfun.file:' + String (path).trim ().toUpperCase ().replace (/\\/g, '/'); }
+	readFile (path)
+	{
+		const k = this.fileKey (path);
+		if (k === 'codeisfun.file:SD:/ETC/SYSTEM.INI') return 'language=' + (global.Site && global.Site.lang === 'fr' ? 'fr' : 'en') + '\n';
+		try { const v = localStorage.getItem (k); return v === null ? null : v; } catch (e) { return this.memFiles && this.memFiles.has (k) ? this.memFiles.get (k) : null; }
+	}
+	writeFile (path, text)
+	{
+		const k = this.fileKey (path);
+		try { localStorage.setItem (k, text); } catch (e) { (this.memFiles || (this.memFiles = new Map ())).set (k, text); }
+		return true;
+	}
+	// RENDER3D: the frame into the page (its colours as RGB, then back)
+	render3d ()
+	{
+		const sc = this.screen, r3 = this.r3, W = sc.W, H = sc.H, v = r3.view;
+		let x0 = 0, y0 = 0, x1 = W, y1 = H;
+		if (v && v.w > 0 && v.h > 0) { x0 = Math.max (0, v.x); y0 = Math.max (0, v.y); x1 = Math.min (W, v.x + v.w); y1 = Math.min (H, v.y + v.h); }
+		if (x1 <= x0 || y1 <= y0) return;
+		const tmp = this.tmp3 && this.tmp3.length === W * H ? this.tmp3 : (this.tmp3 = new Int32Array (W * H));
+		for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const i = y * W + x; tmp[i] = sc.rgb (sc.buf[i]); }
+		r3.render (tmp, W, H);
+		for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const i = y * W + x; sc.buf[i] = RGBF | (tmp[i] & 0xFFFFFF); }
+		sc.dirty = true;
+	}
 	// ---- the host basic.js calls ----
 	host ()
 	{
@@ -517,6 +635,8 @@ class Computer
 			},
 			print (t) { sc.print (t); },
 			ext (name, a) { return me.turtleWord (name, a); },
+			readFile (path) { return me.readFile (path); },
+			writeFile (path, text) { return me.writeFile (path, text); },
 			fn (name, a)
 			{
 				switch (name)
@@ -546,6 +666,30 @@ class Computer
 				case 'PLAY': return me.sound.queued ();
 				case 'RGB': return RGBF | ((Math.max (0, Math.min (255, a[0] | 0)) << 16) | (Math.max (0, Math.min (255, a[1] | 0)) << 8) | Math.max (0, Math.min (255, a[2] | 0)));
 				case 'TICKS': return Math.floor (performance.now () - me.t0);
+				case 'GRAB3D':
+				{
+					const x = Math.round (a[0]), y = Math.round (a[1]), w = Math.round (a[2]), h = Math.round (a[3]);
+					if (w < 1 || h < 1 || w > 1024 || h > 1024) throw E ('Illegal function call (GRAB3D size)');
+					const px = new Int32Array (w * h);
+					for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const v = sc.point (x + i, y + j); px[j * w + i] = v < 0 ? 0 : sc.rgb (v); }
+					return me.r3.addTexture (px, w, h);
+				}
+				case 'GPU3D': return me.r3.gpu () ? -1 : 0;
+				case 'PAD':
+				{
+					const p = me.pads ();
+					if (!a.length || a[0] === null || a[0] < 0) return p.reduce ((b, g) => b | me.padBits (g), 0);
+					return me.padBits (p[Math.round (a[0])]);
+				}
+				case 'PADS': { const p = me.pads (); return a.length && a[0] !== null ? (p[Math.round (a[0])] ? -1 : 0) : p.length; }
+				case 'STICK':			// QBasic's: 0 / 1 x / y of pad 0, 2 / 3 of pad 1: 1..199, 100 centred
+				{
+					const n = Math.round (a[0]), g = me.pads ()[n >> 1];
+					return g ? Math.max (1, Math.min (199, Math.round (100 + (g.axes[n & 1] || 0) * 99))) : 100;
+				}
+				case 'STRIG': { const n = Math.round (a[0]), g = me.pads ()[(n >> 1) & 1]; const k = g && g.buttons[n >= 4 ? 1 : 0]; return k && k.pressed ? -1 : 0; }
+				case 'COMMAND$': return String (me.opts.command || '');
+				case 'FILEEXISTS': return me.readFile (String (a[0])) !== null ? -1 : 0;
 				}
 				throw E (name + ' is not available here');
 			},
@@ -623,6 +767,70 @@ class Computer
 				case 'PLAY': { const ms = me.sound.play (String (a[0])); return ms ? { wait: 'sleep', ms, noKey: true } : undefined; }
 				case 'NOTEON': me.sound.noteOn (Math.round (a[0]), a[1], a[2], a[3]); return;
 				case 'NOTEOFF': me.sound.noteOff (a.length && a[0] !== null ? Math.round (a[0]) : null); return;
+				case 'MIDINOTE': me.sound.midiNote (Math.round (a[0]) & 15, Math.round (a[1]) & 127, a[2] === null || a[2] === undefined ? 100 : Math.max (0, Math.min (127, Math.round (a[2])))); return;
+				case 'MIDIPROGRAM': me.sound.midiProgram (Math.round (a[0]) & 15, Math.round (a[1])); return;
+				case 'MIDICONTROL': me.sound.midiControl (Math.round (a[0]) & 15, Math.round (a[1]), Math.round (a[2])); return;
+				case 'MIDIOFF': me.sound.midiOff (); return;
+				}
+				// ---- the 3D (three3d.js): Onyx's statements, the same defaults
+				const r3 = me.r3, s3 = r3.scene, A = (i, d) => a[i] === null || a[i] === undefined ? d : a[i];
+				const aspect = () => r3.aspect (sc.W, sc.H, sc.sx / sc.sy);
+				switch (op)
+				{
+				case 'SCENE3D': { const c = Math.round (A (0, 0)); s3.begin (c < 0 ? 0 : sc.rgb (c), c < 0); s3.camera (aspect ()); return; }
+				case 'CAMERA3D':
+					s3.eye = [A (0, 0), A (1, 0), A (2, 0)]; s3.target = [A (3, 0), A (4, 0), A (5, 0)];
+					s3.fov = Math.max (1, Math.min (170, A (6, 60))); s3.camera (aspect ()); return;
+				case 'LIGHT3D':
+					s3.light = [A (0, 0), A (1, 0), A (2, 0)]; s3.normL ();
+					if (a.length > 3 && a[3] !== null) s3.ambient = Math.max (0, Math.min (1, a[3] / 100));
+					return;
+				case 'IDENTITY3D': s3.identity (); return;
+				case 'TRANSLATE3D': s3.translate (A (0, 0), A (1, 0), A (2, 0)); return;
+				case 'ROTATE3D': s3.rotate (A (0, 0), A (1, 0), A (2, 0)); return;
+				case 'SCALE3D': { const k = A (0, 1); s3.scale (k, a.length > 1 ? A (1, k) : k, a.length > 2 ? A (2, k) : k); return; }
+				case 'PUSH3D': if (!s3.push ()) throw E ('Out of stack space (PUSH3D: 32 levels)'); return;
+				case 'POP3D': if (!s3.pop ()) throw E ('Illegal function call (POP3D without PUSH3D)'); return;
+				case 'COLOR3D': s3.color = sc.rgb (Math.round (A (0, 15))); s3.alpha = Math.max (0, Math.min (255, Math.round (A (1, 255)))); return;
+				case 'TEXTURE3D':
+				{
+					const t = Math.round (A (0, 0)), B = global.Basic3D;
+					s3.setTexture (t > 0 ? t : 0);
+					let f = s3.flags & ~(B.LINEAR | 3 << B.WRAP_S_SHIFT | 3 << B.WRAP_T_SHIFT);
+					if (Math.round (A (1, 0))) f |= B.LINEAR;
+					let wr = Math.round (A (2, 0)) & 3; if (wr === 3) wr = 0;
+					s3.setFlags (f | wr << B.WRAP_S_SHIFT | wr << B.WRAP_T_SHIFT); return;
+				}
+				case 'BLEND3D':
+				{
+					const m = Math.round (A (0, 0)), B = global.Basic3D;
+					if (m < 0 || m > 3) throw E ('Illegal function call (BLEND3D 0..3)');
+					s3.setFlags ((s3.flags & ~(15 << B.BLEND_SHIFT)) | m << B.BLEND_SHIFT); return;
+				}
+				case 'DEPTH3D':
+				{
+					const B = global.Basic3D, test = Math.round (A (0, 1)) !== 0, wr = Math.round (A (1, test ? 1 : 0)) !== 0;
+					let f = s3.flags & ~(B.ZFUNC | B.NOZWRITE);
+					if (!test) f |= 7;
+					if (!wr) f |= B.NOZWRITE;
+					s3.setFlags (f); return;
+				}
+				case 'CULL3D':
+				{
+					const B = global.Basic3D, m = Math.round (A (0, 1));
+					let f = s3.flags & ~(B.CULL_BACK | B.CULL_FRONT);
+					if (m === 1) f |= B.CULL_BACK; else if (m === 2) f |= B.CULL_FRONT;
+					s3.setFlags (f); return;
+				}
+				case 'VERTEX3D': s3.vertex (A (0, 0), A (1, 0), A (2, 0), A (3, 0), A (4, 0)); return;
+				case 'CUBE3D': s3.cube (A (0, 1)); return;
+				case 'SPHERE3D': s3.sphere (A (0, 1), Math.round (A (1, 16))); return;
+				case 'CYLINDER3D': s3.cylinder (A (0, 0.5), A (1, 1), Math.round (A (2, 16))); return;
+				case 'PLANE3D': s3.plane (A (0, 1), a.length > 1 && a[1] !== null ? a[1] : A (0, 1)); return;
+				case 'RENDER3D': me.render3d (); return;
+				case 'VIEW3D':
+					r3.view = a.length >= 4 && a[0] !== null ? { x: Math.round (a[0]), y: Math.round (a[1]), w: Math.round (a[2]), h: Math.round (a[3]) } : null;
+					s3.camera (aspect ()); return;
 				case 'FULLSCREEN': if (me.opts.onFullscreen) me.opts.onFullscreen (a.length ? a[0] !== 0 : true); return;
 				}
 				throw E (op + ' is not available here');

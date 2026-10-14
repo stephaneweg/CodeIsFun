@@ -5,7 +5,7 @@ const path = require ('path');
 globalThis.window = globalThis;
 const ctx = { createImageData: (w, h) => ({ data: new Uint8ClampedArray (w * h * 4) }), putImageData () {}, save () {}, restore () {}, fillRect () {} };
 globalThis.requestAnimationFrame = () => 0; globalThis.cancelAnimationFrame = () => {};
-for (const f of ['font.js', 'onyx-examples.js']) require (path.join (__dirname, '..', 'turtle', f));
+for (const f of ['font.js', 'onyx-examples.js', 'three3d.js']) require (path.join (__dirname, '..', 'turtle', f));
 globalThis.Basic = require (path.join (__dirname, '..', 'turtle', 'basic.js'));
 require (path.join (__dirname, '..', 'turtle', 'screen.js'));
 const { Computer, FREE_DIALECT } = window.BasicScreen;

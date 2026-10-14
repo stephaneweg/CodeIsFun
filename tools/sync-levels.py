@@ -22,7 +22,7 @@ for game, ext, var in (('turtle', '.turtle', 'TURTLE_PACKS'), ('circuits', '.cir
 	print (out, len (packs), 'packs')
 # the free mode's examples from Onyx's BASIC (SD:/basic/examples): turtle/onyx-examples.js
 ex = []
-for name in ('hello.bas', 'guess.bas', 'graphics.bas', 'arkanoid.bas'):
+for name in ('hello.bas', 'guess.bas', 'graphics.bas', 'arkanoid.bas', 'planets3d.bas', 'antigrav.bas'):
 	with open (os.path.join (onyx, 'sdcard', 'basic', 'examples', name), encoding = 'utf-8') as f: ex.append ({ 'name': name, 'text': f.read () })
 for name in sorted (os.listdir (os.path.join (root, 'turtle', 'bas'))):	# (and Code is Fun's own, turtle/bas)
 	if name.endswith ('.bas'):

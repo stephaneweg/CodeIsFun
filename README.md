@@ -9,10 +9,13 @@ en **français** ou en **anglais** :
   Le BASIC se tape **en anglais ou en français** (`FORWARD` / `AVANCER`, `REPEAT` / `REPETER`, `IF … THEN` /
   `SI … ALORS`…), même mélangés, quelle que soit la langue de l'interface.
   **Le recueil 6, le mode libre** : à gauche l'écran d'un ordinateur, à droite le code — tout le BASIC de QBasic
-  (et d'Onyx) sauf les fichiers : `SCREEN` 0 à 13, `PRINT`, `LOCATE`, `COLOR`, `PSET`, `LINE`, `CIRCLE`, `PAINT`,
+  (et d'Onyx) : `SCREEN` 0 à 13, `PRINT`, `LOCATE`, `COLOR`, `PSET`, `LINE`, `CIRCLE`, `PAINT`,
   `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
-  (`BEEP`, `SOUND`, `PLAY`, `NOTEON`), `GOTO`/`GOSUB`, `DATA`/`READ`, `TYPE`, `ON ERROR`, `ON TIMER`, `WAIT &H3DA`… Des exemples, dont
-  l'Arkanoid d'Onyx tel quel, un Space Invaders (`turtle/bas/invaders.bas`) et **Amanda 2.7** de Rémi Poulin
+  (`BEEP`, `SOUND`, `PLAY`, `NOTEON`), `GOTO`/`GOSUB`, `DATA`/`READ`, `TYPE`, `ON ERROR`, `ON TIMER`, `WAIT &H3DA`…, la **3D** d'Onyx (`SCENE3D`, `MESH3D`, `CAMERA3D`, `DRAW3D`, `VIEW3D`… dessinée par **WebGL**, en logiciel
+  à défaut), les **manettes** (`PAD`, `PADS`, `STICK` : l'API Gamepad du navigateur, jusqu'à 4), la **musique MIDI**
+  (`MIDINOTE`, `MIDIPROGRAM`… un petit synthétiseur WebAudio) et les **fichiers** (`OPEN`, `PRINT #`, `INPUT #`,
+  `LINE INPUT #`, `EOF`… gardés dans le stockage du navigateur). Des exemples, dont
+  l'Arkanoid d'Onyx tel quel, **Antigrav** (la course antigravité en 3D d'Onyx, 1 à 4 joueurs à la manette), un Space Invaders (`turtle/bas/invaders.bas`) et **Amanda 2.7** de Rémi Poulin
   (2001), l'amie qui parle — avec un nouveau portrait en pixel art qui cligne des yeux, parle et se fâche (`turtle/bas/amanda.bas`, produit par `tools/port-amanda.py` : sa mémoire
   `MEMOIRE.DAT` embarquée en `DATA`). Sur téléphone : un pavé de flèches et le clavier du téléphone pour `INPUT`.
 - **[Circuits](circuits/)** : relie des portes logiques (NON, ET, OU, OUX, NON-ET, NON-OU) jusqu'à ce que les
@@ -35,9 +38,9 @@ Raccourcis : **Ctrl+Entrée** lancer / vérifier, **F8** pas à pas, **F9** au d
 | Dossier | Contenu |
 |---|---|
 | `shared/` | le style commun (`site.css`), la langue et la progression (`site.js`), les icônes |
-| `turtle/` | `basic.js` (l'interpréteur BASIC, FR/EN), `world.js` (le moteur : niveaux, monde, exécution enregistrée), `screen.js` (l'ordinateur du mode libre : écran, clavier, souris, son), `app.js` (l'interface), `levels.js`, `onyx-examples.js` et `font.js` (générés) |
+| `turtle/` | `basic.js` (l'interpréteur BASIC, FR/EN), `world.js` (le moteur : niveaux, monde, exécution enregistrée), `screen.js` (l'ordinateur du mode libre : écran, clavier, souris, manettes, son, MIDI, fichiers), `three3d.js` (la 3D d'Onyx : la scène, le rendu WebGL et le rendu logiciel), `app.js` (l'interface), `levels.js`, `onyx-examples.js` et `font.js` (générés) |
 | `circuits/` | `engine.js` (le moteur : plateau, routage des fils, évaluation, vérification), `lessons.js`, `app.js`, `levels.js` (généré) |
-| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid compris), `test-circuits.js`, `shots.js` (captures) |
+| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `shots.js` (captures) |
 | `docs/DESIGN.md` | la direction de l'interface (mises en page ordinateur / tablette / téléphone) |
 
 ## Les niveaux
@@ -48,7 +51,7 @@ Pour les reprendre après un changement dans Onyx :
 ```sh
 python3 tools/sync-levels.py ../Onyx      # turtle/levels.js et circuits/levels.js
 node tools/test-turtle.js                 # chaque solution gagne avec 3 étoiles, en anglais et en français
-node tools/test-free.js                   # le mode libre : les exemples d'Onyx (Arkanoid joué un peu), QBasic
+node tools/test-free.js                   # le mode libre : les exemples d'Onyx (Arkanoid et Antigrav joués un peu), QBasic
 node tools/test-circuits.js
 ```
 
