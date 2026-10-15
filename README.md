@@ -1,6 +1,6 @@
 # Code is Fun
 
-Deux jeux pour apprendre à penser comme un programmeur, dans le navigateur (ordinateur, tablette, téléphone),
+Des jeux pour apprendre à penser comme un programmeur (et un pour se détendre), dans le navigateur (ordinateur, tablette, téléphone),
 en **français** ou en **anglais** :
 
 - **[Turtle Quest](turtle/)** : écris des programmes en BASIC qui guident une tortue jusqu'à son drapeau,
@@ -20,8 +20,14 @@ en **français** ou en **anglais** :
   `MEMOIRE.DAT` embarquée en `DATA`). Sur téléphone : un pavé de flèches et le clavier du téléphone pour `INPUT`.
 - **[Circuits](circuits/)** : relie des portes logiques (NON, ET, OU, OUX, NON-ET, NON-OU) jusqu'à ce que les
   lampes suivent la table de vérité. 3 mondes, 20 niveaux, d'un simple fil jusqu'à un additionneur deux bits.
+- **[Drako!](snake/)** : un snake façon dessin animé (l'esprit de Clash of Clans). Drako, un bébé dragon, reprend
+  l'or du village aux gobelins : 5 villages (3 étoiles chacun) et un mode sans fin, des pièces, de l'élixir (un élan),
+  des gemmes, un bouclier, un sablier qui ralentit le temps, des gobelins qui volent les pièces, des combos jusqu'à x4.
+  Fait pour le téléphone : on glisse n'importe où sur l'écran (ou des flèches à l'écran, un réglage), en portrait ou
+  en paysage ; flèches, WASD ou ZQSD et la manette sur un ordinateur. Tout est dessiné sur le canevas et chaque son
+  est synthétisé (WebAudio) : aucune image, aucun fichier.
 
-Ces jeux viennent d'[Onyx](https://github.com/stephaneweg/onyx), un système d'exploitation fait maison pour le
+Turtle Quest et Circuits viennent d'[Onyx](https://github.com/stephaneweg/onyx), un système d'exploitation fait maison pour le
 Raspberry Pi : mêmes niveaux, mêmes règles, mêmes étoiles, les moteurs portés en JavaScript.
 
 ## Jouer
@@ -40,7 +46,8 @@ Raccourcis : **Ctrl+Entrée** lancer / vérifier, **F8** pas à pas, **F9** au d
 | `shared/` | le style commun (`site.css`), la langue et la progression (`site.js`), les icônes |
 | `turtle/` | `basic.js` (l'interpréteur BASIC, FR/EN), `world.js` (le moteur : niveaux, monde, exécution enregistrée), `screen.js` (l'ordinateur du mode libre : écran, clavier, souris, manettes, son, MIDI, fichiers), `three3d.js` (la 3D d'Onyx : la scène, le rendu WebGL et le rendu logiciel), `app.js` (l'interface), `levels.js`, `onyx-examples.js` et `font.js` (générés) |
 | `circuits/` | `engine.js` (le moteur : plateau, routage des fils, évaluation, vérification), `lessons.js`, `app.js`, `levels.js` (généré) |
-| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `shots.js` (captures) |
+| `snake/` | `drako.js` (Drako! : le jeu, le dessin, le son, les villages), `drako.css`, `index.html` |
+| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `shots.js` (captures) |
 | `docs/DESIGN.md` | la direction de l'interface (mises en page ordinateur / tablette / téléphone) |
 
 ## Les niveaux
@@ -53,6 +60,7 @@ python3 tools/sync-levels.py ../Onyx      # turtle/levels.js et circuits/levels.
 node tools/test-turtle.js                 # chaque solution gagne avec 3 étoiles, en anglais et en français
 node tools/test-free.js                   # le mode libre : les exemples d'Onyx (Arkanoid et Antigrav joués un peu), QBasic
 node tools/test-circuits.js
+node tools/test-drako.js [dossier]       # Drako! (Playwright) : téléphone portrait et paysage, ordinateur
 ```
 
 Un recueil `.turtle` ou `.circuits` peut aussi être ouvert dans le jeu (le bouton dossier de la liste des niveaux).

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Code is Fun</title>
-<meta name="description" content="Two games to learn to think like a programmer: Turtle Quest (programming a turtle in BASIC) and Circuits (logic gates).">
+<meta name="description" content="Games to learn to think like a programmer: Turtle Quest (programming a turtle in BASIC), Circuits (logic gates), and Drako! (a cartoon snake).">
 <meta name="theme-color" content="#FFFDF8">
 <link rel="icon" href="shared/turtle.svg" type="image/svg+xml">
 <link rel="stylesheet" href="shared/site.css">
@@ -54,9 +54,30 @@
 				<div class="row"><span class="progress" id="ciProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
 			</div>
 		</a>
+		<a class="panel game-card" href="snake/">
+			<svg class="thumb" viewBox="0 0 320 200" aria-hidden="true" font-family="Arial Black,Impact,sans-serif">
+				<defs><pattern id="dkck" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#7CC242"/><rect width="20" height="20" fill="#71B53A"/><rect x="20" y="20" width="20" height="20" fill="#71B53A"/></pattern>
+				<linearGradient id="dkgd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF09A"/><stop offset=".5" stop-color="#FFCC2E"/><stop offset="1" stop-color="#D8930F"/></linearGradient></defs>
+				<rect width="320" height="200" fill="#9AA3AD"/>
+				<rect x="12" y="12" width="296" height="176" rx="10" fill="url(#dkck)" stroke="#2A1A0E" stroke-width="3"/>
+				<path d="M40 150 C80 150 80 110 120 110 S170 150 205 135" fill="none" stroke="#2A1A0E" stroke-width="30" stroke-linecap="round"/>
+				<path d="M40 150 C80 150 80 110 120 110 S170 150 205 135" fill="none" stroke="#4CC94A" stroke-width="22" stroke-linecap="round"/>
+				<path d="M40 150 C80 150 80 110 120 110 S170 150 205 135" fill="none" stroke="#D8F27A" stroke-width="6" stroke-linecap="round" transform="translate(0,5)" opacity=".8"/>
+				<g transform="translate(220 130)" stroke="#2A1A0E" stroke-width="3"><path d="M-8 -14 L-18 -26 L-2 -16Z M-8 14 L-18 26 L-2 16Z" fill="#FFF1C9"/><ellipse rx="22" ry="18" fill="#4CC94A"/><path d="M6 0 L22 -10 L22 10Z" fill="#7A1630"/><circle cx="0" cy="-9" r="7" fill="#fff"/><circle cx="0" cy="9" r="7" fill="#fff"/><circle cx="3" cy="-9" r="3.5" fill="#111" stroke="none"/><circle cx="3" cy="9" r="3.5" fill="#111" stroke="none"/></g>
+				<g transform="translate(272 128)" stroke="#2A1A0E" stroke-width="3"><circle r="13" fill="#D8930F"/><circle r="10" cy="-1" fill="#FFCC2E" stroke="none"/></g>
+				<path d="M82 100 q10 -22 0 -30 q-10 8 0 30Z" fill="#E04BD6" stroke="#2A1A0E" stroke-width="3"/>
+				<text x="160" y="66" text-anchor="middle" font-size="48" font-weight="900" fill="#2A1A0E" stroke="#2A1A0E" stroke-width="10" stroke-linejoin="round" dy="4">DRAKO!</text>
+				<text x="160" y="66" text-anchor="middle" font-size="48" font-weight="900" fill="url(#dkgd)" stroke="#2A1A0E" stroke-width="3" paint-order="stroke">DRAKO!</text>
+			</svg>
+			<div class="body">
+				<h2>Drako!</h2>
+				<p data-en="A cartoon snake: steer Drako the baby dragon, gobble the village gold back from the goblins. Five villages and an endless mode — swipe on a phone, arrows on a computer." data-fr="Un snake façon dessin animé : guide Drako le bébé dragon, reprends l'or du village aux gobelins. Cinq villages et un mode sans fin — glisse sur un téléphone, flèches sur un ordinateur.">A cartoon snake: steer Drako the baby dragon.</p>
+				<div class="row"><span class="progress" id="dkProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
+			</div>
+		</a>
 	</section>
 	<footer>
-		<p><span data-en="Two games from" data-fr="Deux jeux tirés de">Two games from</span> <a href="https://github.com/stephaneweg/onyx">Onyx</a><span data-en=", a homemade operating system for the Raspberry Pi." data-fr=", un système d'exploitation fait maison pour le Raspberry Pi.">, a homemade operating system for the Raspberry Pi.</span></p>
+		<p><span data-en="Turtle Quest and Circuits come from" data-fr="Turtle Quest et Circuits viennent de">Turtle Quest and Circuits come from</span> <a href="https://github.com/stephaneweg/onyx">Onyx</a><span data-en=", a homemade operating system for the Raspberry Pi." data-fr=", un système d'exploitation fait maison pour le Raspberry Pi.">, a homemade operating system for the Raspberry Pi.</span></p>
 		<p><span data-en="Your progress stays in this browser." data-fr="Ta progression reste dans ce navigateur.">Your progress stays in this browser.</span> · MIT · <a href="https://github.com/stephaneweg/CodeIsFun">GitHub</a></p>
 	</footer>
 </main>
@@ -69,6 +90,8 @@
 		const tq = Site.store.get ('codeisfun.turtle', {}), ci = Site.store.get ('codeisfun.circuits', {});
 		document.getElementById ('tqProgress').textContent = '★ ' + sum (tq) + ' / 144';
 		document.getElementById ('ciProgress').textContent = '★ ' + sum (ci) + ' / 60';
+		let dk = 0; try { const p = JSON.parse (localStorage.getItem ('codeisfun.snake.progress') || '{}'); dk = (p.stars || []).reduce ((x, y) => x + (y | 0), 0); } catch (e) { /* (no storage) */ }
+		document.getElementById ('dkProgress').textContent = '★ ' + dk + ' / 15';
 	};
 	document.addEventListener ('DOMContentLoaded', show);
 }) ();
