@@ -15,7 +15,7 @@ en **français** ou en **anglais** :
   à défaut), les **manettes** (`PAD`, `PADS`, `STICK` : l'API Gamepad du navigateur, jusqu'à 4), la **musique MIDI**
   (`MIDINOTE`, `MIDIPROGRAM`… un petit synthétiseur WebAudio) et les **fichiers** (`OPEN`, `PRINT #`, `INPUT #`,
   `LINE INPUT #`, `EOF`… gardés dans le stockage du navigateur). Des exemples, dont
-  l'Arkanoid d'Onyx tel quel, **Antigrav** (la course antigravité en 3D d'Onyx, 1 à 4 joueurs à la manette), un Space Invaders (`turtle/bas/invaders.bas`) et **Amanda 2.7** de Rémi Poulin
+  l'Arkanoid d'Onyx tel quel, **Antigrav** (la course antigravité en 3D d'Onyx, 1 à 4 joueurs à la manette), un Space Invaders (`turtle/bas/invaders.bas`), **Zoomo!** (la même course façon dessin animé, en BASIC : `turtle/bas/zoomo.bas`) et **Amanda 2.7** de Rémi Poulin
   (2001), l'amie qui parle — avec un nouveau portrait en pixel art qui cligne des yeux, parle et se fâche (`turtle/bas/amanda.bas`, produit par `tools/port-amanda.py` : sa mémoire
   `MEMOIRE.DAT` embarquée en `DATA`). Sur téléphone : un pavé de flèches et le clavier du téléphone pour `INPUT`.
 - **[Circuits](circuits/)** : relie des portes logiques (NON, ET, OU, OUX, NON-ET, NON-OU) jusqu'à ce que les
@@ -33,6 +33,16 @@ en **français** ou en **anglais** :
   raquette a une tête : elle suit la balle des yeux, sourit, s'inquiète, crie « AÏE ! ». La souris, les flèches, la
   manette ; sur un téléphone le doigt glisse n'importe où et la raquette le suit sans être cachée. Des réglages : moins
   d'animations, icônes des briques marquées (sans se fier aux couleurs), mode tranquille. Aucune image, aucun fichier.
+
+- **[Zoomo!](race/)** : une course antigravité façon dessin animé (la famille de Wipeout ; Antigrav, l'exemple du mode
+  libre, en plein soleil). Six pilotes dans leurs vaisseaux — Tito la tortue, Mimi le chat, Lulu le lapin, Pépin le cochon,
+  Bruno l'ours et Drako le dragon — quatre circuits faits à partir d'un nombre (une boucle qui monte, plonge et penche
+  dans ses virages, sur ses piliers, avec des tunnels, des arcs-en-ciel, des flèches d'élan et des boîtes ?), les
+  Collines Bonbons, la Plage Soleil, le Canyon de Lave et la Boucle des Étoiles ; cinq rivaux qui se défendent (fusées,
+  chewing-gum, bulles, turbos), trois tours, 3 étoiles par circuit. Le vaisseau avance tout seul : flèches ou manette
+  pour tourner, et sur un téléphone on garde le doigt sur un côté de l'écran. Du pseudo-3D dessiné sur le canevas, des
+  dessins animés pour les vaisseaux et le décor (`race/art.js`), chaque son synthétisé : aucune image, aucun fichier.
+  Sa petite sœur en BASIC est dans le mode libre de Turtle Quest (`turtle/bas/zoomo.bas`, avec la 3D d'Onyx).
 
 Turtle Quest et Circuits viennent d'[Onyx](https://github.com/stephaneweg/onyx), un système d'exploitation fait maison pour le
 Raspberry Pi : mêmes niveaux, mêmes règles, mêmes étoiles, les moteurs portés en JavaScript.
@@ -55,7 +65,8 @@ Raccourcis : **Ctrl+Entrée** lancer / vérifier, **F8** pas à pas, **F9** au d
 | `circuits/` | `engine.js` (le moteur : plateau, routage des fils, évaluation, vérification), `lessons.js`, `app.js`, `levels.js` (généré) |
 | `snake/` | `drako.js` (Drako! : le jeu, le dessin, le son, les villages), `drako.css`, `index.html` |
 | `brick/` | `briko.js` (Briko Boom! : la physique, les niveaux, le dessin, le son, les écrans), `briko.css`, `index.html` |
-| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `test-briko.js` (Briko Boom! : le pilote automatique finit les 12 niveaux, le doigt et la souris, les écrans, captures), `shots.js` (captures) |
+| `race/` | `zoomo.js` (Zoomo! : les circuits, la course, l'IA, la caméra, le son, les écrans), `art.js` (les dessins : vaisseaux, pilotes, décors, objets, thèmes), `zoomo.css`, `index.html` |
+| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `test-briko.js` (Briko Boom! : le pilote automatique finit les 12 niveaux, le doigt et la souris, les écrans, captures), `test-zoomo.js` (Zoomo! : le pilote automatique finit les 4 circuits, le clavier et le doigt, les écrans, captures), `shots.js` (captures) |
 | `docs/DESIGN.md` | la direction de l'interface (mises en page ordinateur / tablette / téléphone) |
 
 ## Les niveaux
@@ -70,6 +81,7 @@ node tools/test-free.js                   # le mode libre : les exemples d'Onyx 
 node tools/test-circuits.js
 node tools/test-drako.js [dossier]       # Drako! (Playwright) : téléphone portrait et paysage, ordinateur
 node tools/test-briko.js [dossier]       # Briko Boom! (Playwright) : les 12 niveaux finis par le pilote automatique, les écrans
+node tools/test-zoomo.js [dossier]       # Zoomo! (Playwright) : les 4 circuits courus par le pilote automatique, les écrans
 ```
 
 Un recueil `.turtle` ou `.circuits` peut aussi être ouvert dans le jeu (le bouton dossier de la liste des niveaux).

@@ -65,6 +65,13 @@ for (const ex of window.ONYX_EXAMPLES)
 		check (ex.name, !r.err && r.waits > at && r.waits < 3000, r.err ? 'line ' + r.err.line + ': ' + r.err.message : 'ended after ' + r.waits + ' waits');
 		continue;
 	}
+	if (ex.name === 'zoomo.bas')
+	{
+		// the title (a pilot and a circuit changed), a race started, steered, an item used, paused, Esc twice (the title, quit)
+		const r = run (ex.text, [[10, '\x00M'], [12, '\x00P'], [14, '\x00M'], [16, '\x00P'], [20, '\r'], [200, 'hold:RIGHT'], [260, 'up:RIGHT'], [270, ' '], [300, 'P'], [310, 'P'], [400, '\x1b'], [420, '\x1b']], 1000);
+		check (ex.name, !r.err && r.pc.screen.mode === 12 && r.waits < 1000, r.err ? 'line ' + r.err.line + ': ' + r.err.message : 'waits ' + r.waits);
+		continue;
+	}
 	if (ex.name === 'arkanoid.bas')
 	{
 		// the title (a key: Space), a round played with the arrow held, then Esc twice (the title, quit)

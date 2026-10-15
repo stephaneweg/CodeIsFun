@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Code is Fun</title>
-<meta name="description" content="Games to learn to think like a programmer: Turtle Quest (programming a turtle in BASIC), Circuits (logic gates), Drako! (a cartoon snake) and Briko Boom! (a cartoon brick breaker).">
+<meta name="description" content="Games to learn to think like a programmer: Turtle Quest (programming a turtle in BASIC), Circuits (logic gates), Drako! (a cartoon snake), Briko Boom! (a cartoon brick breaker) and Zoomo! (a cartoon anti-gravity racer).">
 <meta name="theme-color" content="#FFFDF8">
 <link rel="icon" href="shared/turtle.svg" type="image/svg+xml">
 <link rel="stylesheet" href="shared/site.css">
@@ -98,6 +98,31 @@
 				<div class="row"><span class="progress" id="bkProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
 			</div>
 		</a>
+		<a class="panel game-card" href="race/">
+			<svg class="thumb" viewBox="0 0 320 200" aria-hidden="true" font-family="system-ui,sans-serif">
+				<defs><linearGradient id="zmsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4FB4F5"/><stop offset="1" stop-color="#CFF1FF"/></linearGradient></defs>
+				<rect width="320" height="200" fill="url(#zmsky)"/>
+				<path d="M0 110 Q60 88 120 104 T240 98 T320 104 V200 H0Z" fill="#7CCB4E" stroke="#2B2340" stroke-width="2.5"/>
+				<g stroke="#2B2340" stroke-width="2.5" stroke-linejoin="round"><circle cx="270" cy="40" r="18" fill="#FFD23F"/><path d="M30 60a10 10 0 0 1 18-6a12 12 0 0 1 22 4a8 8 0 0 1 2 16h-40a8 8 0 0 1-2-14z" fill="#fff"/></g>
+				<circle cx="264" cy="37" r="2" fill="#2B2340"/><circle cx="276" cy="37" r="2" fill="#2B2340"/><path d="M263 45q7 5 14 0" stroke="#2B2340" stroke-width="2" fill="none"/>
+				<path d="M70 200 L150 104 L170 104 L250 200Z" fill="#9B86E6" stroke="#2B2340" stroke-width="3" stroke-linejoin="round"/>
+				<path d="M70 200 L150 104 L156 104 L88 200Z M250 200 L170 104 L164 104 L232 200Z" fill="#FF4F8E"/>
+				<g fill="none" stroke-width="7"><path d="M118 104 a42 42 0 0 1 84 0" stroke="#FF5A5F"/><path d="M125 104 a35 35 0 0 1 70 0" stroke="#FFD23F"/><path d="M132 104 a28 28 0 0 1 56 0" stroke="#3DD68C"/><path d="M139 104 a21 21 0 0 1 42 0" stroke="#3FA7FF"/></g>
+				<g transform="translate(160 160)" stroke="#2B2340" stroke-width="3" stroke-linejoin="round">
+					<path d="M-52 -2 L-26 -16 L-26 8Z M52 -2 L26 -16 L26 8Z" fill="#FF4F4F"/>
+					<circle cy="-20" r="17" fill="#BDEBFF"/><circle cy="-24" r="10" fill="#7CD67A"/>
+					<rect x="-36" y="-12" width="72" height="26" rx="13" fill="#2E7BFF"/><rect x="-5" y="-12" width="10" height="26" fill="#FF4F4F"/>
+					<circle cx="-17" cy="2" r="7" fill="#DDE6F5"/><circle cx="17" cy="2" r="7" fill="#DDE6F5"/>
+				</g>
+				<path d="M150 134 h20" stroke="#E8383F" stroke-width="4" stroke-linecap="round"/>
+				<text x="86" y="58" text-anchor="middle" font-size="32" font-weight="900" fill="#FF9F1C" stroke="#2B2340" stroke-width="7" paint-order="stroke" stroke-linejoin="round" transform="rotate(-6 86 48)">ZOOMO!</text>
+			</svg>
+			<div class="body">
+				<h2>Zoomo!</h2>
+				<p data-en="A cartoon anti-gravity racer: six pilots in hover pods, four circuits that climb, dive and bank, rockets, gum, bubbles and turbos. Keyboard, gamepad, or a finger on a phone." data-fr="Une course antigravité façon dessin animé : six pilotes dans leurs vaisseaux, quatre circuits qui montent, plongent et penchent, des fusées, du chewing-gum, des bulles et des turbos. Clavier, manette, ou un doigt sur un téléphone.">A cartoon anti-gravity racer.</p>
+				<div class="row"><span class="progress" id="zmProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
+			</div>
+		</a>
 	</section>
 	<footer>
 		<p><span data-en="Turtle Quest and Circuits come from" data-fr="Turtle Quest et Circuits viennent de">Turtle Quest and Circuits come from</span> <a href="https://github.com/stephaneweg/onyx">Onyx</a><span data-en=", a homemade operating system for the Raspberry Pi." data-fr=", un système d'exploitation fait maison pour le Raspberry Pi.">, a homemade operating system for the Raspberry Pi.</span></p>
@@ -117,6 +142,8 @@
 		document.getElementById ('dkProgress').textContent = '★ ' + dk + ' / 15';
 		let bk = 0; try { const p = JSON.parse (localStorage.getItem ('codeisfun.brick.progress') || '{}'); bk = (p.stars || []).reduce ((x, y) => x + (y | 0), 0); } catch (e) { /* (no storage) */ }
 		document.getElementById ('bkProgress').textContent = '★ ' + bk + ' / 36';
+		let zm = 0; try { const p = JSON.parse (localStorage.getItem ('codeisfun.race.progress') || '{}'); zm = (p.stars || []).reduce ((x, y) => x + (y | 0), 0); } catch (e) { /* (no storage) */ }
+		document.getElementById ('zmProgress').textContent = '★ ' + zm + ' / 12';
 	};
 	document.addEventListener ('DOMContentLoaded', show);
 }) ();
