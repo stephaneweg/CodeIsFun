@@ -34,7 +34,7 @@ const ok = (c, m) => { console.log ((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails+
 				let used = 0;
 				for (let k = 0; k < 400 && Zoomo.screen === 'play'; k++) { Zoomo.step (120); if (Zoomo.G.me.item) { Zoomo.useItem (Zoomo.G.me); used++; } Zoomo.draw (); }
 				return { screen: Zoomo.screen, laps: Zoomo.G.me.lap, t: Math.round (Zoomo.G.raceT), place: Zoomo.G.me.place, used, stars: Zoomo.prog.stars.slice (), unlocked: Zoomo.prog.unlocked, stats: Zoomo.G.stats,
-					stuck: Zoomo.G.ships.filter ((s) => s.fall > 0 || s.rescue > 0 || !isFinite (s.s)).length };
+					stuck: Zoomo.G.ships.filter ((s) => !(s.s > 2 * Zoomo.TR.tlen)).length };	// (a craft left behind: stuck somewhere)
 			});
 			ok (r.screen === 'results' && r.stars[ti - 1] >= 1 && r.used > 0, 'the autopilot finishes circuit ' + ti + ' ' + JSON.stringify (r));
 			ok (r.stats.jump > 5 && r.stats.mini > 5 && r.stats.coin > 10 && r.stats.trick > 0 && !r.stuck, 'circuit ' + ti + ': jumps, drifts, tricks, coins happen');
