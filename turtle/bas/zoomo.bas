@@ -15,7 +15,8 @@
 ' roulette (a rocket, three rockets, gum, a bubble, a turbo, the star), jumps over gaps, edges without walls
 ' (fall off: Pouf the cloud fishes you back), three speed classes, a Grand Prix. Finish first!
 '
-' Shows: the pictures drawn with CIRCLE ... F, LINE, PAINT and DRAWTEXT, then taken with GRAB3D (magenta =
+' Shows: two pages (SCREEN , , 1, 0 and PCOPY: each frame drawn out of sight, shown whole); the pictures drawn
+' with CIRCLE ... F, LINE, PAINT and DRAWTEXT, then taken with GRAB3D (magenta =
 ' see-through) and shown as billboards facing the camera (the craft, the trees, the clouds, the sun);
 ' the track made of VERTEX3D quads coloured one by one; CUBE3D pillars lit by LIGHT3D; BLEND3D 1 (see-
 ' through) and 3 (the shadows: a multiply); KEYDOWN / PAD / MOUSEB; NOTEON sounds, MIDINOTE music;
@@ -868,9 +869,6 @@ SUB DrawWorld (camS)
     NEXT
   NEXT
   BLEND3D 0: DEPTH3D 1: CULL3D 1: TEXTURE3D 0
-  ' (a pause here, not at the end of the frame: the picture and what is written over it are then drawn in one go,
-  ' the screen never shown between the two)
-  PAUSE 1
   RENDER3D
 END SUB
 
@@ -1087,6 +1085,7 @@ SUB Race
   camL = lx(0) * .6: camH = 3
   last = TIMER
   DO
+    SCREEN , , 1, 0                 ' (drawn on page 1, out of sight: PCOPY shows the whole frame at once)
     now = TIMER: dt = now - last: last = now
     IF dt < 0 OR dt > .05 THEN dt = .05
     k$ = UCASE$(INKEY$)
@@ -1159,7 +1158,10 @@ SUB Race
     END IF
     IF state = 3 THEN Results
     SfxTick
+    PCOPY 1, 0
+    PAUSE 1
   LOOP
+  SCREEN , , 0, 0
   SoundsOff
 END SUB
 
@@ -1769,6 +1771,7 @@ SUB CupScreen
   NEXT: NEXT
   rk = 1: FOR k = 0 TO 5: IF order(k) = mypilot THEN rk = k + 1
   NEXT
+  SCREEN , , 0, 0
   CLS
   LINE (0, 0)-(639, 479), tc(circ, 1), BF
   Panel 140, 20, 360, 440
@@ -1821,6 +1824,7 @@ SUB TitleScreen
   state = 2: racet = 0: menuSel = 4: paused = 0: vdist = 50
   last = TIMER
   DO
+    SCREEN , , 1, 0                 ' (drawn on page 1, out of sight: PCOPY shows the whole frame at once)
     now = TIMER: dt = now - last: last = now
     IF dt < 0 OR dt > .05 THEN dt = .05
     t = t + dt
@@ -1832,7 +1836,7 @@ SUB TitleScreen
     rt = k$ = CHR$(0) + "M" OR ((p AND 8) <> 0 AND (padprev AND 8) = 0)
     go = k$ = CHR$(13) OR k$ = " " OR ((p AND 16) <> 0 AND (padprev AND 16) = 0) OR ((p AND 8192) <> 0 AND (padprev AND 8192) = 0)
     padprev = p
-    IF k$ = CHR$(27) THEN SoundsOff: CLS: END
+    IF k$ = CHR$(27) THEN SoundsOff: SCREEN , , 0, 0: CLS: END
     IF up THEN menuSel = (menuSel + 5) MOD 6: Sfx 12, 700, 1, 90, .05
     IF dn THEN menuSel = (menuSel + 1) MOD 6: Sfx 12, 700, 1, 90, .05
     IF lf OR rt THEN
@@ -1844,7 +1848,7 @@ SUB TitleScreen
       Sfx 12, 900, 1, 90, .05
     END IF
     IF go THEN
-      IF menuSel = 5 THEN SoundsOff: CLS: END
+      IF menuSel = 5 THEN SoundsOff: SCREEN , , 0, 0: CLS: END
       IF menuSel = 4 THEN EXIT DO
       menuSel = 4
     END IF
@@ -1877,7 +1881,10 @@ SUB TitleScreen
     a$ = T$("Up/Down choose  Left/Right change  Enter play  Esc quit"): DRAWTEXT 320 - LEN(a$) * 4, 436, a$, INK
     a$ = T$("Arrows steer  Shift/C drift  Down brake  Space use  P pause"): DRAWTEXT 320 - LEN(a$) * 4, 454, a$, INK
     SfxTick
+    PCOPY 1, 0
+    PAUSE 1
   LOOP
+  SCREEN , , 0, 0
   SoundsOff
 END SUB
 

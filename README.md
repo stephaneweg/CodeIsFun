@@ -10,7 +10,7 @@ en **français** ou en **anglais** :
   `SI … ALORS`…), même mélangés, quelle que soit la langue de l'interface.
   **Le recueil 6, le mode libre** : à gauche l'écran d'un ordinateur, à droite le code — tout le BASIC de QBasic
   (et d'Onyx) : `SCREEN` 0 à 13, `PRINT`, `LOCATE`, `COLOR`, `PSET`, `LINE`, `CIRCLE`, `PAINT`,
-  `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
+  `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, les pages (`SCREEN , , 1, 0` et `PCOPY` : une image dessinée hors de vue, montrée d'un coup), `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
   (`BEEP`, `SOUND`, `PLAY`, `NOTEON`), `GOTO`/`GOSUB`, `DATA`/`READ`, `TYPE`, `ON ERROR`, `ON TIMER`, `WAIT &H3DA`…, la **3D** d'Onyx (`SCENE3D`, `MESH3D`, `CAMERA3D`, `DRAW3D`, `VIEW3D`… dessinée par **WebGL**, en logiciel
   à défaut), les **manettes** (`PAD`, `PADS`, `STICK` : l'API Gamepad du navigateur, jusqu'à 4), la **musique MIDI**
   (`MIDINOTE`, `MIDIPROGRAM`… un petit synthétiseur WebAudio) et les **fichiers** (`OPEN`, `PRINT #`, `INPUT #`,
@@ -33,6 +33,13 @@ en **français** ou en **anglais** :
   raquette a une tête : elle suit la balle des yeux, sourit, s'inquiète, crie « AÏE ! ». La souris, les flèches, la
   manette ; sur un téléphone le doigt glisse n'importe où et la raquette le suit sans être cachée. Des réglages : moins
   d'animations, icônes des briques marquées (sans se fier aux couleurs), mode tranquille. Aucune image, aucun fichier.
+- **[Cosmo Zap!](invaders/)** : un Space Invaders façon dessin animé. Des calmars, des crabes et des gloubis qui
+  clignent des yeux et te regardent descendent en marchant, de plus en plus vite ; Zip, dans son vaisseau à bulle, les
+  zappe à l'abri de quatre fromages que les tirs (et les aliens) grignotent. Une soucoupe traverse le ciel et lâche des
+  capsules (tir triple, tir rapide, bulle protectrice, vie en plus) ; des combos jusqu'à x4, une vie tous les 5000
+  points, des vagues sans fin. Le clavier, la souris, la manette ; sur un téléphone le doigt glisse n'importe où et le
+  vaisseau tire tant qu'il est posé. Des réglages : la marche des aliens, moins d'animations, mode tranquille. Aucune
+  image, aucun fichier.
 
 - **[Zoomo!](race/)** : une course antigravité façon dessin animé, entre Mario Kart et Antigrav (l'exemple du mode
   libre) : dérapages et mini-turbos (étincelles bleues, orange, roses), pièces (jusqu'à 10, chacune rend un peu plus
@@ -68,8 +75,9 @@ Raccourcis : **Ctrl+Entrée** lancer / vérifier, **F8** pas à pas, **F9** au d
 | `circuits/` | `engine.js` (le moteur : plateau, routage des fils, évaluation, vérification), `lessons.js`, `app.js`, `levels.js` (généré) |
 | `snake/` | `drako.js` (Drako! : le jeu, le dessin, le son, les villages), `drako.css`, `index.html` |
 | `brick/` | `briko.js` (Briko Boom! : la physique, les niveaux, le dessin, le son, les écrans), `briko.css`, `index.html` |
+| `invaders/` | `zap.js` (Cosmo Zap! : les vagues, les fromages, la soucoupe, le dessin, le son, les écrans), `zap.css`, `index.html` |
 | `race/` | `zoomo.js` (Zoomo! : les circuits, la course, l'IA, la caméra, le son, les écrans), `art.js` (les dessins : vaisseaux, pilotes, décors, objets, thèmes), `zoomo.css`, `index.html` |
-| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `test-briko.js` (Briko Boom! : le pilote automatique finit les 12 niveaux, le doigt et la souris, les écrans, captures), `test-zoomo.js` (Zoomo! : le pilote automatique finit les 4 circuits, le clavier et le doigt, les écrans, captures), `shots.js` (captures) |
+| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `test-briko.js` (Briko Boom! : le pilote automatique finit les 12 niveaux, le doigt et la souris, les écrans, captures), `test-zoomo.js` (Zoomo! : le pilote automatique finit les 4 circuits, le clavier et le doigt, les écrans, captures), `test-zap.js` (Cosmo Zap! : le pilote automatique, les capsules, le doigt, le clavier et la souris, les écrans, captures), `shots.js` (captures) |
 | `docs/DESIGN.md` | la direction de l'interface (mises en page ordinateur / tablette / téléphone) |
 
 ## Les niveaux
@@ -85,6 +93,7 @@ node tools/test-circuits.js
 node tools/test-drako.js [dossier]       # Drako! (Playwright) : téléphone portrait et paysage, ordinateur
 node tools/test-briko.js [dossier]       # Briko Boom! (Playwright) : les 12 niveaux finis par le pilote automatique, les écrans
 node tools/test-zoomo.js [dossier]       # Zoomo! (Playwright) : les 4 circuits courus par le pilote automatique, les écrans
+node tools/test-zap.js [dossier]         # Cosmo Zap! (Playwright) : le pilote automatique passe les vagues, les écrans
 ```
 
 Un recueil `.turtle` ou `.circuits` peut aussi être ouvert dans le jeu (le bouton dossier de la liste des niveaux).

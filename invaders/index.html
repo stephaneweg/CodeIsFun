@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cosmo Zap! · Code is Fun</title>
+<meta name="description" content="COSMO ZAP! A cartoon Space Invaders: wobbly aliens marching down, cheese bunkers, a flying saucer full of capsules, endless waves. Keyboard, mouse, gamepad or a finger on a phone.">
+<meta name="theme-color" content="#2A1B5C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="../shared/zap.svg" type="image/svg+xml">
+<link rel="stylesheet" href="zap.css">
+</head>
+<body>
+<div id="app">
+	<canvas id="cv" aria-label="Cosmo Zap!"></canvas>
+	<div id="safe" aria-hidden="true"></div>
+	<button class="kbtn round pause" id="btPause" type="button" data-kl="paused"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+
+	<!-- the title -->
+	<section id="scrTitle" class="screen on">
+		<h1 class="logo"><span class="w1">COSMO</span><span class="w2">ZAP!</span></h1>
+		<p class="tag" data-k="subtitle">Save the planet from the toon invaders!</p>
+		<div class="card menu">
+			<button class="kbtn big pulse" id="btPlay" type="button" data-k="play">Play</button>
+			<div class="row">
+				<button class="kbtn light" id="btHow" type="button" data-k="howBtn">How to play</button>
+				<button class="kbtn light round" id="btSettings" type="button" data-kl="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5.1 1.6 1.3-2 3.4-1.9-.7a7.8 7.8 0 0 1-2 1.2L15.8 21h-4l-.3-2a7.8 7.8 0 0 1-2-1.2l-1.9.7-2-3.4 1.6-1.3a7.6 7.6 0 0 1 0-2.3L5.6 10.3l2-3.4 1.9.7a7.8 7.8 0 0 1 2-1.2L11.8 3h4l.3 2.4a7.8 7.8 0 0 1 2 1.2l1.9-.7 2 3.4-1.6 1.3a7.6 7.6 0 0 1 0 2.3z"/></svg></button>
+			</div>
+			<p class="best" id="bestTitle"></p>
+		</div>
+		<a class="back-site" href="../" data-k="backSite">Back to Code is Fun</a>
+	</section>
+
+	<!-- how to play -->
+	<section id="scrHow" class="screen dim">
+		<div class="card sheet wide">
+			<h2 class="ribbon" data-k="howBtn">How to play</h2>
+			<p id="howText" class="how"></p>
+			<h3 data-k="aliensT">The invaders</h3>
+			<ul class="legend" id="legendAliens"></ul>
+			<h3 data-k="capsT">Capsules</h3>
+			<ul class="legend" id="legendCaps"></ul>
+			<button class="kbtn" type="button" data-go="title" data-k="ok">OK!</button>
+		</div>
+	</section>
+
+	<!-- pause -->
+	<section id="scrPause" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon" data-k="paused">Paused</h2>
+			<button class="kbtn big" id="btResume" type="button" data-k="resume">Resume</button>
+			<div class="row">
+				<button class="kbtn orange" id="btRestart" type="button" data-k="restart">Restart</button>
+				<button class="kbtn light round" id="btSettings2" type="button" data-kl="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5.1 1.6 1.3-2 3.4-1.9-.7a7.8 7.8 0 0 1-2 1.2L15.8 21h-4l-.3-2a7.8 7.8 0 0 1-2-1.2l-1.9.7-2-3.4 1.6-1.3a7.6 7.6 0 0 1 0-2.3L5.6 10.3l2-3.4 1.9.7a7.8 7.8 0 0 1 2-1.2L11.8 3h4l.3 2.4a7.8 7.8 0 0 1 2 1.2l1.9-.7 2 3.4-1.6 1.3a7.6 7.6 0 0 1 0 2.3z"/></svg></button>
+			</div>
+			<button class="kbtn light" type="button" data-go="menu" data-k="menu">Menu</button>
+		</div>
+	</section>
+
+	<!-- game over -->
+	<section id="scrOver" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon red" id="overTitle" data-k="gameOver">Game over</h2>
+			<p class="lvname" id="overNote"></p>
+			<div class="big-score" id="overScore">0</div>
+			<div class="record" id="overRecord" data-k="newRecord">New record!</div>
+			<p class="small" id="overBest"></p>
+			<button class="kbtn big" id="btRetry" type="button" data-k="retry">Play again</button>
+			<button class="kbtn light" type="button" data-go="menu" data-k="menu">Menu</button>
+		</div>
+	</section>
+
+	<!-- settings -->
+	<section id="scrSettings" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon" data-k="settings">Settings</h2>
+			<label class="toggle"><span data-k="sound">Sound</span><input type="checkbox" id="setSound"><i></i></label>
+			<label class="toggle"><span data-k="march">Alien march</span><input type="checkbox" id="setMarch"><i></i></label>
+			<label class="toggle"><span data-k="reduced">Less motion</span><input type="checkbox" id="setReduced"><i></i></label>
+			<label class="toggle"><span data-k="relaxed">Relaxed (5 lives, slower)</span><input type="checkbox" id="setRelaxed"><i></i></label>
+			<div class="toggle"><span data-k="language">Language</span><span class="seg"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></span></div>
+			<button class="kbtn" id="btSetBack" type="button" data-k="ok">OK!</button>
+		</div>
+	</section>
+	<div id="live" class="sr-only" role="status" aria-live="polite"></div>
+</div>
+<script src="../shared/site.js"></script>
+<script src="zap.js"></script>
+</body>
+</html>
