@@ -216,7 +216,7 @@ function tokenize (src, dialect)
 }
 
 // ---- the parser ----------------------------------------------------------------------------------------------------------
-const GFX_ONLY = ['WAIT', 'CLS', 'SCREEN', 'COLOR', 'LOCATE', 'PSET', 'PRESET', 'CIRCLE', 'PAINT', 'DRAW', 'PALETTE', 'SLEEP', 'BEEP', 'SOUND',
+const GFX_ONLY = ['WAIT', 'CLS', 'SCREEN', 'PCOPY', 'COLOR', 'LOCATE', 'PSET', 'PRESET', 'CIRCLE', 'PAINT', 'DRAW', 'PALETTE', 'SLEEP', 'BEEP', 'SOUND',
 	'PLAY', 'GET', 'PUT', 'FULLSCREEN', 'PAUSE', 'DRAWTEXT', 'NOTEON', 'NOTEOFF', 'WIDTH',
 	'SCENE3D', 'RENDER3D', 'CAMERA3D', 'LIGHT3D', 'IDENTITY3D', 'TRANSLATE3D', 'ROTATE3D', 'SCALE3D', 'PUSH3D', 'POP3D', 'COLOR3D', 'TEXTURE3D', 'BLEND3D', 'DEPTH3D', 'CULL3D', 'VERTEX3D', 'CUBE3D', 'SPHERE3D', 'CYLINDER3D', 'PLANE3D', 'VIEW3D', 'MIDINOTE', 'MIDIPROGRAM', 'MIDICONTROL', 'MIDIOFF'];
 class Parser
@@ -476,7 +476,7 @@ class Parser
 			}
 			case 'KILL': case 'CHAIN': case 'SHELL': case 'FILES':
 				this.err (t.v + ' is not available here (no files in a web page)');
-			case 'VIEW': case 'WINDOW': case 'KEY': case 'PCOPY':
+			case 'VIEW': case 'WINDOW': case 'KEY':
 				this.err (t.v + ' is not available here');
 			}
 			if (GFX_ONLY.includes (t.v)) return this.gfxStmt ();

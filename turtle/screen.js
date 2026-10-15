@@ -55,6 +55,7 @@ class Screen
 		if (this.ncol === 2) this.pal = [0x000000, 0xFFFFFF].concat (this.pal.slice (2));
 		if (m === 10) this.pal = [0x000000, 0x808080, 0xAAAAAA, 0xFFFFFF].concat (this.pal.slice (4));
 		this.buf = new Int32Array (this.W * this.H);
+		this.pages = [this.buf]; this.vis = this.buf; this.apage = 0; this.vpage = 0;	// (SCREEN , , apage, vpage; PCOPY)
 		this.cols = this.W / 8; this.rows = Math.floor (this.H / this.cellH);
 		this.fg = m === 0 ? 7 : this.ncol - 1 > 15 ? 15 : this.ncol - 1; this.bg = 0;
 		this.crow = 0; this.ccol = 0; this.lx = this.W / 2; this.ly = this.H / 2;
@@ -65,6 +66,21 @@ class Screen
 		this.dirty = true; this.textUsed = false;
 		if (this.onMode) this.onMode ();
 	}
+	// the pages (up to 8 in every mode): drawn into the active one, the visible one shown -- a game draws its frame
+	// out of sight and shows it whole (PCOPY or a page swap): no flicker
+	page (i)
+	{
+		if (i < 0 || i > 7) throw new Basic.BasicError ('Illegal function call');
+		if (!this.pages[i]) { this.pages[i] = new Int32Array (this.W * this.H); this.pages[i].fill (this.norm (this.bg, 0)); }
+		return this.pages[i];
+	}
+	setPages (ap, vp)
+	{
+		if (ap !== null && ap !== undefined) { this.apage = Math.round (ap); this.buf = this.page (this.apage); }
+		if (vp !== null && vp !== undefined) { this.vpage = Math.round (vp); this.vis = this.page (this.vpage); }
+		this.dirty = true;
+	}
+	pcopy (s, d) { const a = this.page (Math.round (s)), b = this.page (Math.round (d)); if (a !== b) b.set (a); this.dirty = true; }
 	// a colour number -> 0xRRGGBB
 	rgb (c) { return c >= RGBF ? c & 0xFFFFFF : this.pal[(c >>> 0) % 256]; }
 	norm (c, def)
@@ -84,7 +100,7 @@ class Screen
 	{
 		const lut = new Uint32Array (256);
 		for (let i = 0; i < 256; i++) { const v = this.pal[i]; lut[i] = 0xFF000000 | ((v & 0xFF) << 16) | (v & 0xFF00) | ((v >> 16) & 0xFF); }
-		const b = this.buf, o = this.px32;
+		const b = this.vis || this.buf, o = this.px32;
 		for (let i = 0; i < b.length; i++) { const c = b[i]; o[i] = c < RGBF ? lut[c & 255] : 0xFF000000 | ((c & 0xFF) << 16) | (c & 0xFF00) | ((c >> 16) & 0xFF); }
 		this.g.putImageData (this.img, 0, 0);
 		if (overlay) overlay (this.g);
@@ -701,7 +717,11 @@ class Computer
 				case 'WAIT':	// WAIT &H3DA, 8: the VGA's vertical retrace -- the next of 70 frames a second; anything else: no wait
 					if (Math.round (a[0]) === 0x3DA && (a[2] === null || a[2] === undefined)) { const f = 1000 / 70; return { wait: 'sleep', ms: f - (performance.now () % f), noKey: true }; }
 					return;
-				case 'SCREEN': if (a[0] !== null && a[0] !== undefined) { const m = Math.round (a[0]); if (m !== sc.mode) { sc.setMode (m); sc.cls (); if (me.turtle) me.turtleHome (); } } return;
+				case 'SCREEN':
+					if (a[0] !== null && a[0] !== undefined) { const m = Math.round (a[0]); if (m !== sc.mode) { sc.setMode (m); sc.cls (); if (me.turtle) me.turtleHome (); } }
+					if ((a[2] !== null && a[2] !== undefined) || (a[3] !== null && a[3] !== undefined)) sc.setPages (a[2], a[3]);
+					return;
+				case 'PCOPY': sc.pcopy (a[0], a[1]); return;
 				case 'WIDTH': return;
 				case 'COLOR':
 					if (a[0] !== null && a[0] !== undefined) sc.fg = Math.round (a[0]);

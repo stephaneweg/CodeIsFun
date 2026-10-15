@@ -10,7 +10,7 @@ en **français** ou en **anglais** :
   `SI … ALORS`…), même mélangés, quelle que soit la langue de l'interface.
   **Le recueil 6, le mode libre** : à gauche l'écran d'un ordinateur, à droite le code — tout le BASIC de QBasic
   (et d'Onyx) : `SCREEN` 0 à 13, `PRINT`, `LOCATE`, `COLOR`, `PSET`, `LINE`, `CIRCLE`, `PAINT`,
-  `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
+  `DRAW`, `POINT`, `PALETTE`, `GET`/`PUT`, les pages (`SCREEN , , 1, 0` et `PCOPY` : une image dessinée hors de vue, montrée d'un coup), `INPUT`, `INKEY$`, `INPUT$`, `KEYDOWN`, la souris (`MOUSEX`…), le son
   (`BEEP`, `SOUND`, `PLAY`, `NOTEON`), `GOTO`/`GOSUB`, `DATA`/`READ`, `TYPE`, `ON ERROR`, `ON TIMER`, `WAIT &H3DA`…, la **3D** d'Onyx (`SCENE3D`, `MESH3D`, `CAMERA3D`, `DRAW3D`, `VIEW3D`… dessinée par **WebGL**, en logiciel
   à défaut), les **manettes** (`PAD`, `PADS`, `STICK` : l'API Gamepad du navigateur, jusqu'à 4), la **musique MIDI**
   (`MIDINOTE`, `MIDIPROGRAM`… un petit synthétiseur WebAudio) et les **fichiers** (`OPEN`, `PRINT #`, `INPUT #`,
