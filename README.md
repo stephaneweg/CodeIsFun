@@ -33,6 +33,13 @@ en **français** ou en **anglais** :
   raquette a une tête : elle suit la balle des yeux, sourit, s'inquiète, crie « AÏE ! ». La souris, les flèches, la
   manette ; sur un téléphone le doigt glisse n'importe où et la raquette le suit sans être cachée. Des réglages : moins
   d'animations, icônes des briques marquées (sans se fier aux couleurs), mode tranquille. Aucune image, aucun fichier.
+- **[Cosmo Zap!](invaders/)** : un Space Invaders façon dessin animé. Des calmars, des crabes et des gloubis qui
+  clignent des yeux et te regardent descendent en marchant, de plus en plus vite ; Zip, dans son vaisseau à bulle, les
+  zappe à l'abri de quatre fromages que les tirs (et les aliens) grignotent. Une soucoupe traverse le ciel et lâche des
+  capsules (tir triple, tir rapide, bulle protectrice, vie en plus) ; des combos jusqu'à x4, une vie tous les 5000
+  points, des vagues sans fin. Le clavier, la souris, la manette ; sur un téléphone le doigt glisse n'importe où et le
+  vaisseau tire tant qu'il est posé. Des réglages : la marche des aliens, moins d'animations, mode tranquille. Aucune
+  image, aucun fichier.
 
 Turtle Quest et Circuits viennent d'[Onyx](https://github.com/stephaneweg/onyx), un système d'exploitation fait maison pour le
 Raspberry Pi : mêmes niveaux, mêmes règles, mêmes étoiles, les moteurs portés en JavaScript.
@@ -55,7 +62,8 @@ Raccourcis : **Ctrl+Entrée** lancer / vérifier, **F8** pas à pas, **F9** au d
 | `circuits/` | `engine.js` (le moteur : plateau, routage des fils, évaluation, vérification), `lessons.js`, `app.js`, `levels.js` (généré) |
 | `snake/` | `drako.js` (Drako! : le jeu, le dessin, le son, les villages), `drako.css`, `index.html` |
 | `brick/` | `briko.js` (Briko Boom! : la physique, les niveaux, le dessin, le son, les écrans), `briko.css`, `index.html` |
-| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `test-briko.js` (Briko Boom! : le pilote automatique finit les 12 niveaux, le doigt et la souris, les écrans, captures), `shots.js` (captures) |
+| `invaders/` | `zap.js` (Cosmo Zap! : les vagues, les fromages, la soucoupe, le dessin, le son, les écrans), `zap.css`, `index.html` |
+| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `test-briko.js` (Briko Boom! : le pilote automatique finit les 12 niveaux, le doigt et la souris, les écrans, captures), `test-zap.js` (Cosmo Zap! : le pilote automatique, les capsules, le doigt, le clavier et la souris, les écrans, captures), `shots.js` (captures) |
 | `docs/DESIGN.md` | la direction de l'interface (mises en page ordinateur / tablette / téléphone) |
 
 ## Les niveaux
@@ -70,6 +78,7 @@ node tools/test-free.js                   # le mode libre : les exemples d'Onyx 
 node tools/test-circuits.js
 node tools/test-drako.js [dossier]       # Drako! (Playwright) : téléphone portrait et paysage, ordinateur
 node tools/test-briko.js [dossier]       # Briko Boom! (Playwright) : les 12 niveaux finis par le pilote automatique, les écrans
+node tools/test-zap.js [dossier]         # Cosmo Zap! (Playwright) : le pilote automatique passe les vagues, les écrans
 ```
 
 Un recueil `.turtle` ou `.circuits` peut aussi être ouvert dans le jeu (le bouton dossier de la liste des niveaux).
