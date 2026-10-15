@@ -38,6 +38,10 @@
 			<h2 class="ribbon" data-k="choose">Pick your racer</h2>
 			<div id="pilots" class="pilots" role="group"></div>
 			<p class="lvname" id="pilotName"></p>
+			<div class="toggle"><span data-k="speed">Speed</span><span class="seg cls" id="classSeg"></span></div>
+			<button class="kbtn big orange gpbtn" id="btGP" type="button"><canvas id="gpCup" width="64" height="64" aria-hidden="true"></canvas><span data-k="gp">Grand Prix</span></button>
+			<p class="small" data-k="gpNote">The 4 circuits in a row: points for each place.</p>
+			<h3 data-k="single">One race</h3>
 			<div id="tracks" class="tracks"></div>
 			<p class="small" data-k="starsRule">★ finish · ★★ on the podium · ★★★ first!</p>
 			<button class="kbtn light" type="button" data-go="title" data-k="back">Back</button>
@@ -49,6 +53,7 @@
 		<div class="card sheet wide">
 			<h2 class="ribbon" data-k="howBtn">How to play</h2>
 			<p id="howText" class="how"></p>
+			<p id="howDrift" class="how"></p>
 			<h3 data-k="itemsT">The ? boxes</h3>
 			<ul class="legend" id="legendItems"></ul>
 			<p class="small" data-k="padsRule">Blue arrows on the track: a free boost!</p>
@@ -83,6 +88,18 @@
 				<button class="kbtn orange" id="btRetry" type="button" data-k="retry">Retry</button>
 				<button class="kbtn light" type="button" data-go="menu" data-k="menu">Menu</button>
 			</div>
+		</div>
+	</section>
+
+	<!-- the end of a Grand Prix -->
+	<section id="scrCup" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon" data-k="cupTitle">Grand Prix!</h2>
+			<p class="lvname" id="cupTitle"></p>
+			<canvas id="cupArt" width="240" height="200" class="cupart" aria-hidden="true"></canvas>
+			<table class="rank" id="cupRank"></table>
+			<p class="note" id="cupNote"></p>
+			<button class="kbtn big" id="btCupOk" type="button" data-k="menu">Menu</button>
 		</div>
 	</section>
 

@@ -89,11 +89,23 @@ function hash (n) { const s = Math.sin (n * 127.1 + 311.7) * 43758.5453; return 
 function drawShip (g, p, o)
 {
 	o = o || NO;
-	const lw = o.ink || 0.06, t = o.t || 0, lean = clamp (o.lean || 0, -1, 1), spin = clamp (o.spin || 0, 0, 1);
-	const thrust = o.thrust == null ? 0.6 : clamp (o.thrust, 0, 1), stuck = !!o.stuck, turbo = !!o.turbo && !stuck;
+	const lw = o.ink || 0.06, t = o.t || 0, spin = clamp (o.spin || 0, 0, 1), drift = clamp (o.drift || 0, -1, 1);
+	const lean = clamp ((o.lean || 0) + drift * 0.8, -1, 1), trick = clamp (o.trick || 0, 0, 1), air = !!o.air || trick > 0;
+	const thrust = o.thrust == null ? 0.6 : clamp (o.thrust, 0, 1), stuck = !!o.stuck, turbo = !!o.turbo && !stuck, star = !!o.star;
+	// the invincibility star: the pod flashes through the rainbow
+	const fi = star ? Math.floor (t * 14) : 0, c1 = star ? RAINBOW[fi % 6] : p.c1, c2 = star ? RAINBOW[(fi + 3) % 6] : p.c2;
 	g.save ();
 	g.lineJoin = 'round'; g.lineCap = 'round';
-	g.rotate (lean * 0.06);
+	if (star) { g.fillStyle = 'rgba(255,225,77,.35)'; ell (g, 0, -0.25, 1.7, 1.25); g.fill (); }
+	if (trick > 0)
+	{	// the trick: a barrel roll (seen from behind it is a spin in the screen plane) with a little hop and squash
+		const e = trick * trick * (3 - 2 * trick);
+		g.translate (0, -0.3 - Math.sin (trick * Math.PI) * 0.35); g.rotate (e * TAU * (o.trickDir < 0 ? -1 : 1)); g.translate (0, 0.3);
+		const q = 1 - Math.sin (trick * Math.PI * 2) * 0.08; g.scale (q, 2 - q);
+	}
+	else if (air) g.translate (0, -0.04 + Math.sin (t * 8) * 0.03);
+	g.rotate (lean * 0.06 + drift * 0.1);
+	if (drift) g.scale (1 - Math.abs (drift) * 0.1, 1);
 	// the hover glow under the pod
 	g.fillStyle = stuck ? 'rgba(255,122,192,.4)' : turbo ? 'rgba(255,200,80,.45)' : 'rgba(127,230,255,.4)';
 	ell (g, 0, 0.5, 0.8, 0.1); g.fill ();
@@ -103,8 +115,8 @@ function drawShip (g, p, o)
 		const fy = -lean * s * 0.14;
 		g.beginPath (); g.moveTo (s * 0.8, -0.22); g.lineTo (s * 1.3, -0.54 + fy); g.quadraticCurveTo (s * 1.46, -0.5 + fy, s * 1.42, -0.36 + fy);
 		g.lineTo (s * 1.14, 0.24 + fy * 0.4); g.lineTo (s * 0.8, 0.24); g.closePath ();
-		inked (g, p.c2, lw);
-		g.beginPath (); g.moveTo (s * 0.95, -0.12); g.lineTo (s * 1.3, -0.36 + fy); stroke (g, shade (p.c2, -0.22), lw * 1.1);
+		inked (g, c2, lw);
+		g.beginPath (); g.moveTo (s * 0.95, -0.12); g.lineTo (s * 1.3, -0.36 + fy); stroke (g, shade (c2, -0.22), lw * 1.1);
 		const on = Math.sin (t * 6 + (s > 0 ? 0 : 3)) > 0;
 		circ (g, s * 1.35, -0.46 + fy, 0.07); inked (g, on ? (s < 0 ? '#FF5A5F' : '#3DD68C') : '#FFFFFF', lw * 0.8);
 	}
@@ -115,18 +127,19 @@ function drawShip (g, p, o)
 	const wob = spin ? Math.sin (t * 9) * spin : 0;
 	const hx = lean * 0.09 + wob * 0.06, hy = -0.68, ha = lean * 0.16 + wob * 0.22;
 	pilotBack (g, p, hx, hy, ha, lw, t, lean);
+	if (air) cheerArms (g, p, hx, lw, t, trick);
 	// the pod: a darker belly, the body, the racing stripe, the highlight band
-	rr (g, -0.84, -0.04, 1.68, 0.5, 0.25); inked (g, shade (p.c1, -0.32), lw);
+	rr (g, -0.84, -0.04, 1.68, 0.5, 0.25); inked (g, shade (c1, -0.32), lw);
 	g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect (-0.6, 0.36, 1.2, 0.04);
-	rr (g, -1.0, -0.34, 2.0, 0.62, 0.31); g.fillStyle = p.c1; g.fill ();
-	g.fillStyle = p.c2; g.fillRect (-0.15, -0.34, 0.3, 0.62);
+	rr (g, -1.0, -0.34, 2.0, 0.62, 0.31); g.fillStyle = c1; g.fill ();
+	g.fillStyle = c2; g.fillRect (-0.15, -0.34, 0.3, 0.62);
 	g.fillStyle = OL; g.fillRect (-0.15 - lw * 0.3, -0.34, lw * 0.6, 0.62); g.fillRect (0.15 - lw * 0.3, -0.34, lw * 0.6, 0.62);
 	rr (g, -0.86, -0.28, 1.72, 0.12, 0.06); g.fillStyle = 'rgba(255,255,255,.5)'; g.fill ();
 	rr (g, -1.0, -0.34, 2.0, 0.62, 0.31); stroke (g, OL, lw);
 	// the antenna and its ball
 	const sw = Math.sin (t * 7) * 0.05 - lean * 0.14;
 	g.beginPath (); g.moveTo (0.7, -0.32); g.quadraticCurveTo (0.74, -0.72, 0.8 + sw, -1.02); stroke (g, OL, lw * 1.1);
-	circ (g, 0.8 + sw, -1.04, 0.085); inked (g, p.c2 === '#FFFFFF' ? '#FFD23F' : p.c2, lw * 0.9);
+	circ (g, 0.8 + sw, -1.04, 0.085); inked (g, c2 === '#FFFFFF' ? '#FFD23F' : c2, lw * 0.9);
 	shine (g, 0.77 + sw, -1.07, 0.03, 0.02, 0, 0.8);
 	// the two thrusters: a jet plume streaming back toward the camera (down on screen), the nozzle over it
 	for (const s of [-1, 1])
@@ -152,9 +165,64 @@ function drawShip (g, p, o)
 		g.beginPath (); g.arc (x, y, 0.19, -2.6, -1.7); stroke (g, 'rgba(255,255,255,.75)', lw * 0.8);
 	}
 	if (stuck) gumStrands (g, lw, t);
+	if (drift) dust (g, drift, lw, t);
+	if (o.spark >= 1) sparks (g, Math.min (3, Math.floor (o.spark)), lw, t);
+	if (star) starSparkles (g, lw, t);
 	if (spin > 0.02) dizzy (g, hx, hy - 0.48, lw, t, spin);
 	if (o.shield) shieldBubble (g, lw, t);
 	g.restore ();
+}
+
+// airborne: both arms up, "wheee!" (waving faster during a trick)
+function cheerArms (g, p, hx, lw, t, trick)
+{
+	const arm = p.kind === 'turtle' ? p.skin : p.suit, w = trick > 0 ? 18 : 9;
+	for (const s of [-1, 1])
+	{
+		const wv = Math.sin (t * w + s) * 0.07, x0 = hx * 0.5 + s * 0.3, x1 = hx + s * 0.66 + wv, y1 = -1.12 + Math.abs (wv);
+		g.beginPath (); g.moveTo (x0, -0.42); g.quadraticCurveTo (s * 0.62 + hx * 0.5, -0.62, x1, y1); tube (g, 0.13, arm, lw);
+		circ (g, x1, y1, 0.1); inked (g, p.skin, lw * 0.9);
+	}
+}
+// drifting: puffs of dust thrown out at the outer rear corner
+function dust (g, drift, lw, t)
+{
+	const s = drift > 0 ? -1 : 1, a = Math.abs (drift);
+	for (let i = 0; i < 3; i++)
+	{
+		const k = (t * 2.6 + i / 3) % 1, r = (0.14 + k * 0.3) * (0.6 + a * 0.6);
+		g.globalAlpha = (1 - k) * 0.85;
+		circ (g, s * (1.0 + k * 0.7), 0.42 + k * 0.25 - i * 0.03, r); inked (g, '#F2EEF8', lw * 0.5 * (1 - k));
+	}
+	g.globalAlpha = 1;
+}
+// the mini-turbo charge: sparks spraying from the rear corners (1 blue, 2 orange, 3 purple-pink)
+const SPARK = [null, ['#3FA7FF', '#BFE6FF'], ['#FF9F1C', '#FFE14D'], ['#D65CFF', '#FF8CE0']];
+function sparks (g, lv, lw, t)
+{
+	const c = SPARK[lv], n = 3 + lv;
+	for (const s of [-1, 1])
+	{
+		const x = s * 0.92, y = 0.38;
+		circ (g, x, y, 0.14 + lv * 0.03 + Math.sin (t * 40 + s) * 0.03); g.fillStyle = c[1]; g.fill ();
+		g.beginPath ();
+		for (let i = 0; i < n; i++)
+		{
+			const h = hash (i * 7.3 + s * 3 + Math.floor (t * 24)), a = Math.PI * (0.5 - s * (0.15 + h * 0.55)), l = (0.25 + h * 0.3) * (0.8 + lv * 0.25);
+			g.moveTo (x + Math.cos (a) * 0.1, y + Math.sin (a) * 0.1); g.lineTo (x + Math.cos (a) * l, y + Math.sin (a) * l);
+		}
+		stroke (g, OL, lw * 2.2); stroke (g, c[0], lw * 1.1);
+		starPath (g, x, y, 0.16 + lv * 0.03, 0.06, 4, t * 10); inked (g, '#FFFFFF', lw * 0.6);
+	}
+}
+// the invincibility star: sparkles orbiting the craft
+function starSparkles (g, lw, t)
+{
+	for (let i = 0; i < 5; i++)
+	{
+		const a = t * 3 + i * TAU / 5, k = (Math.sin (t * 9 + i * 2) + 1) / 2;
+		starPath (g, Math.cos (a) * 1.55, -0.3 + Math.sin (a) * 0.95, 0.1 + k * 0.1, 0.04, 4, 0); g.fillStyle = i % 2 ? '#FFFFFF' : '#FFE14D'; g.fill ();
+	}
 }
 
 // the pilot from behind: shoulders, the head (rotated by ha around hx, hy) and what makes each kind recognisable
@@ -468,25 +536,29 @@ const THEMES = [
 		sun: true, night: false, track1: '#9A86E8', track2: '#8E79DE', line: '#FFFFFF', rumbleA: '#FF4FA0', rumbleB: '#FFFFFF',
 		wall: '#FF8CC6', wallTop: '#FFFFFF', skirt: '#D45594', pillar: '#FFE1F0', tunnel1: '#FF6FB5', tunnel2: '#FFF3F9',
 		arch: ['#FF5A5F', '#FF9F1C', '#FFD23F', '#3DD68C', '#3FA7FF'],
-		deco: [['tree', 3], ['lollipop', 3], ['candycane', 2], ['bush', 2], ['cloud', 1]], fog: '#E2F5FF', cloud: '#FFFFFF' },
+		deco: [['tree', 3], ['lollipop', 3], ['candycane', 2], ['bush', 2], ['cloud', 1]], fog: '#E2F5FF', cloud: '#FFFFFF',
+		ramp1: '#FFD23F', ramp2: '#2B2340', edge: '#FFE14D', void: '#7FD0FF' },
 	{ id: 'beach', name: ['Sunny Beach', 'Plage Soleil'],
 		skyTop: '#2FAEF5', skyBot: '#BDF0FF', ground: '#1FC2CF', groundFar: '#86E4EA', hills: '#3FB06A', hills2: '#A8DDE6',
 		sun: true, night: false, track1: '#F6C27A', track2: '#EEB46A', line: '#FFFFFF', rumbleA: '#FF5A5F', rumbleB: '#FFFFFF',
 		wall: '#FFD23F', wallTop: '#FFFFFF', skirt: '#C9803E', pillar: '#E9D3A8', tunnel1: '#2E9BFF', tunnel2: '#FFFFFF',
 		arch: ['#FF5A5F', '#FF9F1C', '#FFE14D', '#2FD9A0', '#2E9BFF'],
-		deco: [['palm', 5], ['umbrella', 2], ['rock', 2], ['boat', 2], ['cloud', 1]], fog: '#D6F6FF', cloud: '#FFFFFF' },
+		deco: [['palm', 5], ['umbrella', 2], ['rock', 2], ['boat', 2], ['cloud', 1]], fog: '#D6F6FF', cloud: '#FFFFFF',
+		ramp1: '#2E9BFF', ramp2: '#FFFFFF', edge: '#2E9BFF', void: '#1FC2CF' },
 	{ id: 'lava', name: ['Lava Canyon', 'Canyon de Lave'],
 		skyTop: '#3D2370', skyBot: '#FF8A55', ground: '#3B2236', groundFar: '#6A2E48', hills: '#2A1530', hills2: '#7A3A6A',
 		sun: true, night: false, track1: '#8C82A6', track2: '#80769B', line: '#FFD23F', rumbleA: '#FFD23F', rumbleB: '#2B2340',
 		wall: '#FF6A2B', wallTop: '#FFD23F', skirt: '#4A3550', pillar: '#5E4A6E', tunnel1: '#FF7A2B', tunnel2: '#3B2A4A',
 		arch: ['#FF3D3D', '#FF7A1C', '#FFB020', '#FFE14D', '#FFF3B0'],
-		deco: [['rockspire', 4], ['crystal', 3], ['volcano', 1], ['lavafall', 1]], fog: '#D8708A', cloud: '#FFC2CF' },
+		deco: [['rockspire', 4], ['crystal', 3], ['volcano', 1], ['lavafall', 1]], fog: '#D8708A', cloud: '#FFC2CF',
+		ramp1: '#FFD23F', ramp2: '#2B2340', edge: '#FF3D3D', void: '#FF6A2B' },
 	{ id: 'space', name: ['Star Loop', 'Boucle des Étoiles'],
 		skyTop: '#090A2A', skyBot: '#3B1F78', ground: '#1B1446', groundFar: '#3A2780', hills: '#24185A', hills2: '#4A3296',
 		sun: false, night: true, track1: '#3E3592', track2: '#362D85', line: '#46F0FF', rumbleA: '#FF3DD8', rumbleB: '#46F0FF',
 		wall: '#46F0FF', wallTop: '#FFFFFF', skirt: '#1E1650', pillar: '#4A3FA0', tunnel1: '#FF3DD8', tunnel2: '#2A1F70',
 		arch: ['#FF3DD8', '#B85CFF', '#46F0FF', '#3DFFA0', '#FFE14D'],
-		deco: [['asteroid', 4], ['planet', 1], ['satellite', 2], ['crystal', 2]], fog: '#4E2E96', cloud: '#8F7FD6' } ];
+		deco: [['asteroid', 4], ['planet', 1], ['satellite', 2], ['crystal', 2]], fog: '#4E2E96', cloud: '#8F7FD6',
+		ramp1: '#3DFFA0', ramp2: '#2A1F70', edge: '#FFE14D', void: '#090A2A' } ];
 const themeOf = (th) => typeof th === 'string' ? THEMES.find ((x) => x.id === th) || THEMES[0] : th || THEMES[0];
 
 // ---- the scenery ---------------------------------------------------------------------------------------------------
@@ -947,23 +1019,43 @@ function drawGum (g, o)
 	if (k < 0.92) { circ (g, 0.18, -br * 0.9, br); g.fillStyle = 'rgba(255,140,200,.85)'; g.fill (); stroke (g, OL, lw * 0.8); shine (g, 0.18 - br * 0.4, -br * 1.3, br * 0.3, br * 0.15, -0.6, 0.7); }
 	g.restore ();
 }
-// the item in the HUD slot (radius r): 'rocket', 'gum', 'shield', 'turbo'
+// a rocket pointing up, for the icons (radius r)
+function rocketIcon (g, r, lw)
+{
+	starPath (g, 0, r * 0.8, r * 0.3, r * 0.16, 7, 0); inked (g, '#FF7A1C', lw * 0.8);
+	circ (g, 0, r * 0.78, r * 0.13); g.fillStyle = '#FFE14D'; g.fill ();
+	for (const s of [-1, 1]) { poly (g, [s * r * 0.24, r * 0.1, s * r * 0.52, r * 0.6, s * r * 0.24, r * 0.55]); inked (g, '#FFD23F', lw); }
+	g.beginPath (); g.moveTo (-r * 0.26, r * 0.6); g.lineTo (-r * 0.26, -r * 0.2); g.quadraticCurveTo (-r * 0.24, -r * 0.7, 0, -r * 0.92);
+	g.quadraticCurveTo (r * 0.24, -r * 0.7, r * 0.26, -r * 0.2); g.lineTo (r * 0.26, r * 0.6); g.closePath (); inked (g, '#FF3D3D', lw);
+	g.beginPath (); g.moveTo (-r * 0.2, -r * 0.48); g.quadraticCurveTo (0, -r * 0.6, r * 0.2, -r * 0.48); g.quadraticCurveTo (r * 0.1, -r * 0.8, 0, -r * 0.92); g.quadraticCurveTo (-r * 0.1, -r * 0.8, -r * 0.2, -r * 0.48); g.closePath (); inked (g, '#FFFFFF', lw * 0.8);
+	circ (g, 0, -r * 0.05, r * 0.14); inked (g, '#7FE6FF', lw * 0.8);
+	shine (g, -r * 0.14, r * 0.15, r * 0.05, r * 0.22, 0, 0.5);
+}
+// the invincibility star: gold with a rainbow fringe and a smile
+function starIcon (g, r, lw, t)
+{
+	const R = r * 0.98, rot = Math.sin (t * 3) * 0.08;
+	starPath (g, 0, r * 0.04, R * 1.04, R * 0.5, 5, rot + 0.14); g.fillStyle = '#FF4FA0'; g.fill ();
+	starPath (g, 0, r * 0.04, R * 1.04, R * 0.5, 5, rot - 0.14); g.fillStyle = '#46C8FF'; g.fill ();
+	starPath (g, 0, r * 0.04, R, R * 0.5, 5, rot); inked (g, '#FFD23F', lw);
+	starPath (g, 0, r * 0.1, R * 0.7, R * 0.36, 5, rot); g.fillStyle = '#FFE98A'; g.fill ();
+	shine (g, -r * 0.18, -r * 0.42, r * 0.08, r * 0.16, 0.5, 0.7);
+	for (const s of [-1, 1]) { ell (g, s * r * 0.16, -r * 0.02, r * 0.07, r * 0.15); g.fillStyle = OL; g.fill (); circ (g, s * r * 0.16 - r * 0.02, -r * 0.08, r * 0.03); g.fillStyle = '#FFFFFF'; g.fill (); }
+	g.beginPath (); g.arc (0, r * 0.14, r * 0.14, 0.3, Math.PI - 0.3); stroke (g, OL, lw);
+	g.fillStyle = 'rgba(255,90,140,.45)'; for (const s of [-1, 1]) { ell (g, s * r * 0.34, r * 0.16, r * 0.08, r * 0.05); g.fill (); }
+}
+// the item in the HUD slot (radius r): 'rocket', 'rocket3', 'gum', 'shield', 'turbo', 'star'
 function drawItemIcon (g, item, r)
 {
 	const lw = r * 0.09;
 	g.save (); g.lineJoin = 'round'; g.lineCap = 'round';
-	if (item === 'rocket')
+	if (item === 'rocket') { g.rotate (-Math.PI / 4); rocketIcon (g, r, lw); }
+	else if (item === 'rocket3')
 	{
-		g.rotate (-Math.PI / 4);
-		starPath (g, 0, r * 0.8, r * 0.3, r * 0.16, 7, 0); inked (g, '#FF7A1C', lw * 0.8);
-		circ (g, 0, r * 0.78, r * 0.13); g.fillStyle = '#FFE14D'; g.fill ();
-		for (const s of [-1, 1]) { poly (g, [s * r * 0.24, r * 0.1, s * r * 0.52, r * 0.6, s * r * 0.24, r * 0.55]); inked (g, '#FFD23F', lw); }
-		g.beginPath (); g.moveTo (-r * 0.26, r * 0.6); g.lineTo (-r * 0.26, -r * 0.2); g.quadraticCurveTo (-r * 0.24, -r * 0.7, 0, -r * 0.92);
-		g.quadraticCurveTo (r * 0.24, -r * 0.7, r * 0.26, -r * 0.2); g.lineTo (r * 0.26, r * 0.6); g.closePath (); inked (g, '#FF3D3D', lw);
-		g.beginPath (); g.moveTo (-r * 0.2, -r * 0.48); g.quadraticCurveTo (0, -r * 0.6, r * 0.2, -r * 0.48); g.quadraticCurveTo (r * 0.1, -r * 0.8, 0, -r * 0.92); g.quadraticCurveTo (-r * 0.1, -r * 0.8, -r * 0.2, -r * 0.48); g.closePath (); inked (g, '#FFFFFF', lw * 0.8);
-		circ (g, 0, -r * 0.05, r * 0.14); inked (g, '#7FE6FF', lw * 0.8);
-		shine (g, -r * 0.14, r * 0.15, r * 0.05, r * 0.22, 0, 0.5);
+		for (const [x, y, a] of [[-0.42, 0.22, -1.05], [0.42, 0.22, -0.52], [0, -0.2, -0.785]])
+		{ g.save (); g.translate (x * r, y * r); g.rotate (a); rocketIcon (g, r * 0.62, lw * 0.75); g.restore (); }
 	}
+	else if (item === 'star') starIcon (g, r, lw, 0);
 	else if (item === 'gum')
 	{
 		circ (g, r * 0.08, -r * 0.08, r * 0.72); inked (g, '#FF8CC6', lw);
@@ -1016,5 +1108,133 @@ function drawPow (g, text, r, t)
 	g.restore ();
 }
 
-window.ZoomoArt = { OL, PILOTS, THEMES, DECO_INFO, drawShip, drawFace, drawDeco, drawBackdrop, drawSkyThing, drawBox, drawRocket, drawGum, drawItemIcon, drawPow, shade };
+// ---- coins, Pouf's rescue, trophies, speed classes ----------------------------------------------------------------
+// a gold coin spinning about its vertical axis (diameter 1), anchor its centre
+function coinFace (g, rx, ry, lw)
+{
+	ell (g, 0, 0, rx, ry); inked (g, '#FFC83D', lw);
+	ell (g, 0, 0, rx * 0.74, ry * 0.74); stroke (g, '#E89A00', lw * 0.9);
+	if (rx > ry * 0.35) { g.save (); g.scale (rx / ry, 1); otext (g, 'Z', 0, ry * 0.02, ry * 1.0, '#FFF3B0', lw * 0.8); g.restore (); }
+}
+function drawCoin (g, o)
+{
+	o = o || NO;
+	const lw = o.ink || 0.05, t = o.t || 0, a = t * 4 + (o.phase || 0), c = Math.cos (a), r = 0.5, th = 0.09;
+	g.save (); g.lineJoin = 'round'; g.lineCap = 'round';
+	g.translate (0, Math.sin (t * 3 + (o.phase || 0)) * 0.06);
+	const rx = Math.max (0.035, Math.abs (c) * r), side = Math.sin (a) > 0 ? 1 : -1, ex = th * Math.abs (Math.sin (a));
+	// the edge, then the face
+	rr (g, -rx + side * ex * 0.5 - ex * 0.5, -r, rx * 2 + ex, r * 2, rx); inked (g, '#D99A00', lw);
+	g.translate (-side * ex * 0.5, 0);
+	coinFace (g, rx, r, lw);
+	if (rx > 0.12) shine (g, -rx * 0.42, -r * 0.48, rx * 0.22, r * 0.12, -0.5, 0.7);
+	const k = (Math.sin (t * 5 + (o.phase || 0) * 3) + 1) / 2;
+	if (k > 0.6) { starPath (g, rx * 0.6, -r * 0.62, 0.1 + (k - 0.6) * 0.3, 0.035, 4, 0); g.fillStyle = '#FFFFFF'; g.fill (); }
+	g.restore ();
+}
+function drawCoinIcon (g, r)
+{
+	const lw = r * 0.1;
+	g.save (); g.lineJoin = 'round'; g.lineCap = 'round';
+	circ (g, r * 0.06, r * 0.08, r * 0.94); inked (g, '#D99A00', lw);
+	coinFace (g, r * 0.9, r * 0.9, lw);
+	shine (g, -r * 0.4, -r * 0.44, r * 0.2, r * 0.1, -0.6, 0.75);
+	g.restore ();
+}
+// Pouf the cloud (Briko Boom!'s mascot) fishing a fallen craft back: the anchor is the hook, the craft hangs below it
+function drawRescue (g, o)
+{
+	o = o || NO;
+	const lw = o.ink || 0.06, t = o.t || 0, k = 0.055;
+	const cx = -1.95 + Math.sin (t * 1.6) * 0.1, cy = -3.5 + Math.sin (t * 2.3) * 0.08, tx = 0.05, ty = -2.55;
+	g.save (); g.lineJoin = 'round'; g.lineCap = 'round';
+	// the line and the hook
+	g.beginPath (); g.moveTo (tx, ty); g.quadraticCurveTo (0.06, -1.4, 0, -0.3); stroke (g, OL, lw * 0.9);
+	g.beginPath (); g.moveTo (0, -0.34); g.lineTo (0, -0.05); g.arc (0.11, -0.05, 0.11, Math.PI, 0, true); g.lineTo (0.22, -0.14);
+	tube (g, 0.06, '#C9D2E0', lw * 0.8);
+	circ (g, 0, -0.38, 0.09); inked (g, '#FF5A5F', lw * 0.8);
+	// the rod, held under the cloud
+	g.beginPath (); g.moveTo (cx + 0.55, cy + 0.85); g.quadraticCurveTo (cx + 1.4, cy + 0.2, tx, ty); tube (g, 0.08, '#B57638', lw);
+	circ (g, cx + 0.72, cy + 0.68, 0.13); inked (g, '#FFD23F', lw * 0.8);
+	// Pouf: merged puffs, a face, two little hands
+	g.save (); g.translate (cx, cy); g.scale (k, k);
+	const blobs = [[-14, 4, 13], [0, -6, 16], [15, 3, 13], [0, 8, 12]];
+	blob (g, blobs, '#FFFFFF', lw / k);
+	g.save (); g.beginPath (); for (const [a, b, r] of blobs) { g.moveTo (a + r, b); g.arc (a, b, r, 0, TAU); } g.clip ();
+	ell (g, 0, 20, 30, 6); g.fillStyle = 'rgba(160,205,255,.45)'; g.fill (); g.restore ();
+	shine (g, -7, -15, 6, 2.6, -0.4, 0.9);
+	const blink = (t % 3.2) < 0.12;
+	for (const e of [-6, 6])
+	{
+		if (blink) { g.beginPath (); g.moveTo (e - 2.6, -1); g.lineTo (e + 2.6, -1); stroke (g, OL, 1.6); }
+		else { ell (g, e, -1.5, 2.4, 3); g.fillStyle = OL; g.fill (); circ (g, e - 0.8, -2.6, 0.9); g.fillStyle = '#FFFFFF'; g.fill (); }
+	}
+	g.fillStyle = 'rgba(255,122,182,.6)'; for (const e of [-12, 12]) { ell (g, e, 4, 3.5, 2.4); g.fill (); }
+	g.beginPath (); g.arc (0, 3.5, 3.4, 0.15, Math.PI - 0.15); g.closePath (); inked (g, '#B8263A', 1.4);
+	for (const [x, y] of [[14, 12], [7, 15]]) { circ (g, x, y, 3.2); inked (g, '#FFFFFF', lw / k * 0.8); }
+	g.restore ();
+	g.restore ();
+}
+// the Grand Prix cup: rank 1 gold, 2 silver, 3 bronze; r its half height, anchor its centre
+const CUP = [null, ['#FFD23F', '#E89A00', '#FFF3B0'], ['#DDE3EE', '#9AA6BA', '#FFFFFF'], ['#E8A06A', '#B8652E', '#FFD7B5']];
+function drawTrophy (g, rank, r, o)
+{
+	o = o || NO;
+	const lw = o.ink || r * 0.07, t = o.t || 0, c = CUP[rank] || CUP[1];
+	g.save (); g.lineJoin = 'round'; g.lineCap = 'round'; g.scale (r, r);
+	const L = lw / r;
+	// the handles
+	for (const s of [-1, 1]) { g.beginPath (); g.moveTo (s * 0.5, -0.72); g.bezierCurveTo (s * 1.0, -0.8, s * 1.0, -0.2, s * 0.36, -0.08); tube (g, 0.1, c[0], L); }
+	// the plinth, the stem, the bowl
+	rr (g, -0.56, 0.62, 1.12, 0.38, 0.08); inked (g, '#6B4FB8', L);
+	rr (g, -0.4, 0.71, 0.8, 0.2, 0.05); g.fillStyle = c[2]; g.fill ();
+	otext (g, String (rank || 1), 0, 0.815, 0.2, OL, 0);
+	rr (g, -0.4, 0.46, 0.8, 0.18, 0.06); inked (g, c[0], L);
+	g.beginPath (); g.moveTo (-0.1, 0.0); g.lineTo (-0.14, 0.48); g.lineTo (0.14, 0.48); g.lineTo (0.1, 0.0); g.closePath (); inked (g, c[1], L);
+	g.beginPath (); g.moveTo (-0.66, -0.92); g.lineTo (0.66, -0.92); g.bezierCurveTo (0.66, -0.2, 0.36, 0.08, 0, 0.08); g.bezierCurveTo (-0.36, 0.08, -0.66, -0.2, -0.66, -0.92); g.closePath ();
+	inked (g, c[0], L);
+	g.beginPath (); g.moveTo (0.66, -0.92); g.bezierCurveTo (0.66, -0.2, 0.36, 0.08, 0, 0.08); g.bezierCurveTo (0.3, -0.05, 0.48, -0.4, 0.46, -0.92); g.closePath ();
+	g.fillStyle = c[1]; g.fill ();
+	ell (g, 0, -0.92, 0.66, 0.1); inked (g, c[1], L);
+	g.beginPath (); g.moveTo (-0.46, -0.78); g.bezierCurveTo (-0.46, -0.5, -0.36, -0.3, -0.24, -0.2); stroke (g, 'rgba(255,255,255,.75)', 0.08);
+	starPath (g, 0, -0.45, 0.24, 0.11, 5, 0); inked (g, rank === 1 ? '#FF5A5F' : rank === 2 ? '#3FA7FF' : '#3DD68C', L * 0.8);
+	for (let i = 0; i < 3; i++)
+	{
+		const k = (Math.sin (t * 4 + i * 2.1) + 1) / 2, x = [-0.8, 0.85, 0.55][i], y = [-1.0, -0.55, -1.15][i];
+		starPath (g, x, y, 0.06 + k * 0.12, 0.025, 4, 0); g.fillStyle = '#FFFFFF'; g.fill (); stroke (g, OL, L * 0.4);
+	}
+	g.restore ();
+}
+// the speed class icons: 0 a snail (relaxed), 1 a bunny arrow (fast), 2 a rocket (rocket fast); r the radius
+function drawSpeedClass (g, k, r)
+{
+	const lw = r * 0.09;
+	g.save (); g.lineJoin = 'round'; g.lineCap = 'round';
+	if (k === 0)
+	{
+		g.beginPath (); g.moveTo (-r * 0.85, r * 0.62); g.lineTo (r * 0.55, r * 0.62); g.quadraticCurveTo (r * 0.78, r * 0.62, r * 0.75, r * 0.2);
+		g.lineTo (r * 0.68, -r * 0.1); g.quadraticCurveTo (r * 0.5, -r * 0.2, r * 0.45, r * 0.25); g.lineTo (-r * 0.85, r * 0.38); g.closePath (); inked (g, '#B8E86A', lw);
+		for (const [x, y] of [[0.58, -0.1], [0.74, -0.08]]) { g.beginPath (); g.moveTo (x * r, y * r); g.lineTo ((x + 0.06) * r, (y - 0.42) * r); stroke (g, OL, lw * 0.9); circ (g, (x + 0.06) * r, (y - 0.46) * r, r * 0.07); g.fillStyle = OL; g.fill (); }
+		circ (g, -r * 0.18, -r * 0.02, r * 0.58); inked (g, '#FF8CC6', lw);
+		g.beginPath (); for (let i = 0; i <= 26; i++) { const a = i * 0.48, q = r * 0.5 * (1 - i / 28); g.lineTo (-r * 0.18 + Math.cos (a) * q, -r * 0.02 + Math.sin (a) * q); }
+		stroke (g, '#D9479A', lw);
+		shine (g, -r * 0.42, -r * 0.34, r * 0.14, r * 0.06, -0.6, 0.7);
+	}
+	else if (k === 1)
+	{
+		for (const [x, a] of [[-0.12, -0.35], [0.14, -0.05]]) { g.save (); g.translate (x * r, -r * 0.2); g.rotate (a); ell (g, 0, -r * 0.42, r * 0.13, r * 0.4); inked (g, '#FFFFFF', lw); ell (g, 0, -r * 0.4, r * 0.06, r * 0.28); g.fillStyle = '#FFB3D1'; g.fill (); g.restore (); }
+		poly (g, [-r * 0.9, -r * 0.2, r * 0.1, -r * 0.2, r * 0.1, -r * 0.55, r * 0.9, r * 0.15, r * 0.1, r * 0.85, r * 0.1, r * 0.5, -r * 0.9, r * 0.5]);
+		inked (g, '#FF9F1C', lw);
+		for (const s of [-1, 1]) { circ (g, r * (0.08 + s * 0.13), r * 0.1, r * 0.06); g.fillStyle = OL; g.fill (); }
+		g.beginPath (); g.moveTo (-r * 0.75, -r * 0.05); g.lineTo (-r * 0.2, -r * 0.05); stroke (g, 'rgba(255,255,255,.6)', lw * 1.2);
+	}
+	else
+	{
+		g.rotate (Math.PI / 4); rocketIcon (g, r * 0.95, lw);
+	}
+	g.restore ();
+}
+
+window.ZoomoArt = { OL, PILOTS, THEMES, DECO_INFO, drawShip, drawFace, drawDeco, drawBackdrop, drawSkyThing, drawBox, drawRocket, drawGum, drawItemIcon, drawPow, shade,
+	drawCoin, drawCoinIcon, drawRescue, drawTrophy, drawSpeedClass };
 }) ();

@@ -20,8 +20,8 @@ const T = {
 	easy: ['Easy (slower rivals)', 'Facile (rivaux plus lents)'], language: ['Language', 'Langue'],
 	choose: ['Pick your racer', 'Choisis ton pilote'], starsRule: ['★ finish · ★★ on the podium · ★★★ first!', '★ finis la course · ★★ sur le podium · ★★★ premier !'],
 	itemsT: ['The ? boxes', 'Les boîtes ?'], padsRule: ['Blue arrows on the track: a free boost!', 'Les flèches bleues sur la piste : un élan gratuit !'],
-	howKeys: ['Your craft goes by itself! ← → (or A D / Q D) to steer, ↓ to brake. Space (or Enter) uses what you found in a ? box. P or Esc: pause. Three laps: be first!',
-		'Ton vaisseau avance tout seul ! ← → (ou Q D) pour tourner, ↓ pour freiner. Espace (ou Entrée) utilise ce que tu as trouvé dans une boîte ?. P ou Échap : pause. Trois tours : sois premier !'],
+	howKeys: ['Your craft goes by itself! ← → (or A D / Q D) to steer, ↓ to brake, Shift (or C) to drift. Space (or Enter) uses what you found in a ? box. P or Esc: pause. Three laps: be first!',
+		'Ton vaisseau avance tout seul ! ← → (ou Q D) pour tourner, ↓ pour freiner, Maj (ou C) pour déraper. Espace (ou Entrée) utilise ce que tu as trouvé dans une boîte ?. P ou Échap : pause. Trois tours : sois premier !'],
 	howTouch: ['Your craft goes by itself! Hold the left or the right side of the screen to steer. Tap the round button at the bottom to use what you found in a ? box. Three laps: be first!',
 		'Ton vaisseau avance tout seul ! Garde le doigt sur le côté gauche ou droit de l\'écran pour tourner. Touche le bouton rond en bas pour utiliser ce que tu as trouvé dans une boîte ?. Trois tours : sois premier !'],
 	iRocket: ['Rocket: flies to the racer ahead', 'Fusée : file vers le pilote devant'], iGum: ['Gum: dropped behind you, it sticks!', 'Chewing-gum : lâché derrière toi, ça colle !'],
@@ -33,7 +33,21 @@ const T = {
 	bestLap: ['Best lap {t}', 'Meilleur tour {t}'], bestTime: ['Best: {t}', 'Record : {t}'], locked: ['Locked', 'Verrouillé'],
 	unlockNote: ['Finish in the top 3 to open the next circuit.', 'Finis dans les 3 premiers pour ouvrir le circuit suivant.'],
 	opened: ['A new circuit is open!', 'Un nouveau circuit est ouvert !'], allStars: ['Stars: {n} / 12', 'Étoiles : {n} / 12'],
-	circuit: ['Circuit {n}', 'Circuit {n}'] };
+	circuit: ['Circuit {n}', 'Circuit {n}'],
+	rocketStart: ['ROCKET START!', 'DÉPART TURBO !'], tooEarly: ['Too early!', 'Trop tôt !'], super: ['SUPER!', 'GÉNIAL !'], oops: ['Oops!', 'Oups !'],
+	starOn: ['STAR POWER!', 'SUPER ÉTOILE !'], startKeys: ['Press ↑ just before GO: a rocket start!', 'Appuie sur ↑ juste avant le départ : départ turbo !'],
+	startTouch: ['Tap just before GO: a rocket start!', 'Touche l\'écran juste avant le départ : départ turbo !'],
+	gpRace: ['Grand Prix · race {n}/4', 'Grand Prix · course {n}/4'], gp: ['Grand Prix', 'Grand Prix'], gpNote: ['The 4 circuits in a row: points for each place.', 'Les 4 circuits à la suite : des points à chaque course.'],
+	single: ['One race', 'Une course'], nextRace: ['Next race', 'Course suivante'], pts: ['pts', 'pts'], cupTitle: ['Grand Prix!', 'Grand Prix !'],
+	cupWin: ['The golden cup!', 'La coupe d\'or !'], cup2: ['The silver cup!', 'La coupe d\'argent !'], cup3: ['The bronze cup!', 'La coupe de bronze !'], cupNone: ['No cup this time…', 'Pas de coupe cette fois…'],
+	cupBest: ['Best cup: {c}', 'Meilleure coupe : {c}'], cupNames: ['gold|silver|bronze', 'or|argent|bronze'], allOpen: ['Every circuit is open!', 'Tous les circuits sont ouverts !'],
+	speed: ['Speed', 'Vitesse'], cl0: ['Easy', 'Tranquille'], cl1: ['Fast', 'Rapide'], cl2: ['Rocket', 'Fusée'],
+	iStar: ['Star: nothing can hurt you, faster, and you knock the others away!', 'Étoile : rien ne te touche, tu vas plus vite et tu bouscules les autres !'],
+	iRocket3: ['Three rockets, straight ahead', 'Trois fusées, tout droit'],
+	howDrift: ['Drift: hold Shift (or C) while turning — sparks! blue, orange, pink — let go for a boost. On the jumps, press it again for a trick. Coins: up to 10, each one a little faster.',
+		'Dérapage : garde Maj (ou C) en tournant — des étincelles ! bleues, orange, roses — lâche pour un élan. Sur les tremplins, rappuie pour une figure. Les pièces : jusqu\'à 10, chacune rend un peu plus rapide.'],
+	howDriftTouch: ['Drift: keep your finger on a side, turning — sparks! — let go for a boost. On a jump, tap for a trick. Coins: up to 10, each one a little faster. Mind the edges without walls!',
+		'Dérapage : garde le doigt sur un côté en tournant — des étincelles ! — lâche pour un élan. Sur un tremplin, touche l\'écran pour une figure. Les pièces : jusqu\'à 10, chacune rend un peu plus rapide. Attention aux bords sans murs !'] };
 const lang = () => (window.Site && Site.lang === 'fr') ? 1 : 0;
 function tr (k, v) { let s = (T[k] || [k, k])[lang ()]; if (v) for (const n in v) s = s.split ('{' + n + '}').join (v[n]); return s; }
 const $ = (id) => document.getElementById (id);
@@ -50,12 +64,16 @@ const prog = Object.assign ({ unlocked: 1, stars: [], best: [], pilot: 0 }, stor
 // ---- the circuits -----------------------------------------------------------------------------------------------
 const N = 480, SEGL0 = 5, HW = 6, WALLH = 1.1, NSHIP = 6, LAPS = 3, VD = 72, DT = 1 / 120;
 const TRACKS = [
-	{ theme: 'candy', seed: 1207, hills: 0.8, tunnels: 1, curve: 1 / 24 },
-	{ theme: 'beach', seed: 912, hills: 0.6, tunnels: 1, curve: 1 / 22 },
-	{ theme: 'lava', seed: 7781, hills: 1.2, tunnels: 2, curve: 1 / 21 },
-	{ theme: 'space', seed: 6060, hills: 1.5, tunnels: 2, curve: 1 / 20 } ];
+	{ theme: 'candy', seed: 1207, hills: 0.8, tunnels: 1, curve: 1 / 24, ramps: 1, open: 1 },
+	{ theme: 'beach', seed: 912, hills: 0.6, tunnels: 1, curve: 1 / 22, ramps: 2, open: 1 },
+	{ theme: 'lava', seed: 7781, hills: 1.1, tunnels: 2, curve: 1 / 21, ramps: 2, open: 2 },
+	{ theme: 'space', seed: 6060, hills: 1.2, tunnels: 2, curve: 1 / 20, ramps: 3, open: 2 } ];
+// the speed classes (Antigrav's): the top speed
+const CLASSES = [{ v: 76, k: 'cl0' }, { v: 92, k: 'cl1' }, { v: 110, k: 'cl2' }];
+// the Grand Prix: the points of each place
+const POINTS = [10, 8, 6, 4, 2, 1];
 const NTRACK = TRACKS.length;
-const ITEMS = ['rocket', 'gum', 'shield', 'turbo'];
+const ITEMS = ['rocket', 'rocket3', 'gum', 'shield', 'turbo', 'star'];
 const OL = '#2B2340';
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
@@ -159,12 +177,34 @@ function buildTrack (ti)
 		const a = 70 + Math.floor ((k + R () * 0.6) * (N - 160) / D.tunnels), b = a + 20 + Math.floor (R () * 18);
 		for (let i = a; i <= b; i++) kind[i % N] |= 1;
 	}
-	for (let i = 30; i < N - 12; i += 34 + Math.floor (R () * 8)) if (!(kind[i] & 1)) kind[i] |= 8;
+	// jumps (16 the ramp, 128 the gap after it: nothing under the craft), on the straights
+	const straight = (i, n) => { for (let k = -2; k < n; k++) { const j = (i + k + N) % N; if (Math.abs (cv[j]) > 0.012 || (kind[j] & 1)) return false; } return true; };
+	let ramps = 0;
+	for (let tries = 0; tries < 400 && ramps < D.ramps; tries++)
+	{
+		const i = 40 + Math.floor (R () * (N - 60));
+		if (!straight (i, 9)) continue;
+		let far = true;
+		for (let k = -40; k < 40; k++) if (kind[(i + k + N) % N] & 16) far = false;
+		if (!far) continue;
+		kind[i] |= 16; kind[i + 1] |= 16;
+		for (let k = 3; k < 7; k++) kind[(i + k) % N] |= 128;
+		ramps++;
+	}
+	// edges without walls (64): fall off, and Pouf the cloud fishes you back
+	for (let k = 0; k < D.open; k++)
+	{
+		const a = 90 + Math.floor ((k + 0.3 + R () * 0.4) * (N - 140) / Math.max (1, D.open)), b = a + 22 + Math.floor (R () * 10);
+		let ok = true;
+		for (let i = a - 4; i <= b + 4; i++) if (kind[i % N] & (1 | 16 | 128)) ok = false;
+		if (ok) for (let i = a; i <= b; i++) kind[i % N] |= 64;
+	}
+	for (let i = 30; i < N - 12; i += 34 + Math.floor (R () * 8)) if (!(kind[i] & (1 | 16 | 128))) kind[i] |= 8;
 	kind[0] |= 8;
 	let boxes = 0;
 	for (let i = 20; i < N - 10;)
 	{
-		if (Math.abs (cv[i]) < 0.02 && !(kind[i] & 9) && !(kind[i + 1] & 9))
+		if (Math.abs (cv[i]) < 0.02 && !(kind[i] & (9 | 16 | 128)) && !(kind[i + 1] & (9 | 16 | 128)))
 		{
 			const kk = boxes < 2 || R () < 0.45 ? 4 : 2;
 			if (kk === 4) boxes++;
@@ -173,6 +213,9 @@ function buildTrack (ti)
 		}
 		else i += 3;
 	}
+	// rows of coins (32), in a lane
+	for (let i = 12; i < N - 6; i += 9 + Math.floor (R () * 14))
+		if (!(kind[i] & (2 | 4 | 16 | 128)) && !(kind[i + 1] & (2 | 4 | 16 | 128))) { kind[i] |= 32; if (!(kind[i] & 6)) lane[i] = Math.floor (R () * 3) - 1; }
 	kind[N] = kind[0]; lane[N] = lane[0];
 	const groundY = minY - 14;
 	// the scenery: on the ground beside the track (never on it), some floating
@@ -201,12 +244,13 @@ function buildTrack (ti)
 	const sc = 2 / Math.max (x1 - x0, z1 - z0), mm = [];
 	for (let i = 0; i <= N; i += 6) mm.push ([(px[i % N] - (x0 + x1) / 2) * sc, (pz[i % N] - (z0 + z1) / 2) * sc]);
 	// the colours, faded into the haze by distance (a table: one row a segment ahead)
-	const fog = hex (th.fog || th.skyBot), keys = ['track1', 'track2', 'line', 'rumbleA', 'rumbleB', 'wall', 'wallTop', 'skirt', 'pillar', 'tunnel1', 'tunnel2'];
+	const fog = hex (th.fog || th.skyBot), keys = ['track1', 'track2', 'line', 'rumbleA', 'rumbleB', 'wall', 'wallTop', 'skirt', 'pillar', 'tunnel1', 'tunnel2', 'ramp1', 'ramp2', 'edge'];
+	const DEF = { ramp1: '#FFD23F', ramp2: OL, edge: '#FFFFFF' };
 	const FOG = [];
 	for (let k = 0; k <= VD + 6; k++)
 	{
 		const f = Math.min (0.9, Math.pow (Math.max (0, k) / VD, 1.5) * 0.85), row = {};
-		for (const key of keys) row[key] = mixc (hex (th[key] || '#888888'), fog, f);
+		for (const key of keys) row[key] = mixc (hex (th[key] || DEF[key] || '#888888'), fog, f);
 		row.arch = (th.arch || ['#FF5A5F', '#FF9F1C', '#FFD23F', '#3DD68C', '#3FA7FF']).map ((c) => mixc (hex (c), fog, f));
 		row.ink = mixc (hex (OL), fog, f * 0.8);
 		FOG.push (row);
@@ -293,6 +337,20 @@ const Snd = {
 		case 'finish': [72, 76, 79, 84].forEach ((n, i) => this.tone ('square', m (n), 0, 0.14, 0.25, i * 0.12)); this.tone ('square', m (88), 0, 0.6, 0.25, 0.5); break;
 		case 'star': this.tone ('sine', 1320, 0, 0.15, 0.4); this.tone ('sine', 1980, 0, 0.12, 0.15, 0.03); break;
 		case 'tap': this.tone ('sine', 600, 0, 0.03, 0.3); break;
+		case 'coin': this.tone ('square', m (88), 0, 0.06, 0.2); this.tone ('square', m (95), 0, 0.2, 0.2, 0.06); break;
+		case 'tick': this.tone ('square', m (84), 0, 0.03, 0.12); break;
+		case 'got': [79, 84, 88].forEach ((n, i) => this.tone ('triangle', m (n), 0, 0.08, 0.3, i * 0.05)); break;
+		case 'hop': this.tone ('sine', 300, 600, 0.08, 0.3); break;
+		case 'spark': this.tone ('square', 1800, 2400, 0.05, 0.1); break;
+		case 'mini1': case 'mini2': case 'mini3': this.noise (0.35, 0.4, 'bandpass', 600, 3000); this.tone ('sawtooth', 150, 350 + 120 * +k.slice (4), 0.3, 0.18); break;
+		case 'jump': this.tone ('sine', 200, 800, 0.3, 0.35); break;
+		case 'land': this.tone ('triangle', 120, 70, 0.12, 0.45); break;
+		case 'trick': [76, 81, 86].forEach ((n, i) => this.tone ('square', m (n), 0, 0.07, 0.2, i * 0.06)); this.noise (0.4, 0.4, 'bandpass', 500, 3000); break;
+		case 'fall': this.tone ('sine', 900, 120, 0.9, 0.35); break;
+		case 'rescue': this.tone ('sine', 500, 900, 0.15, 0.3); this.tone ('sine', 900, 600, 0.15, 0.25, 0.15); break;
+		case 'starItem': [72, 76, 79, 84, 88, 91].forEach ((n, i) => this.tone ('square', m (n), 0, 0.08, 0.2, i * 0.06)); break;
+		case 'stall': this.noise (0.5, 0.4, 'lowpass', 400, 100); this.tone ('sawtooth', 90, 50, 0.4, 0.2); break;
+		case 'cup': [72, 76, 79, 84, 79, 84, 88].forEach ((n, i) => this.tone ('square', m (n), 0, 0.16, 0.25, i * 0.14)); break;
 		}
 	},
 	// the engine: a hum that follows the speed (on while racing)
@@ -348,30 +406,42 @@ function musicFor ()
 
 // ---- the race ---------------------------------------------------------------------------------------------------
 let G = null, screen = 'title', paused = false, settingsFrom = 'title';
-function newRace (ti, pilot, demo)
+let cls = clamp (prog.cls ?? 1, 0, 2);
+// A race: ti the circuit, pilot the player's, demo (the computer's pilots only), gp (the Grand Prix going on)
+function newRace (ti, pilot, demo, gp)
 {
 	buildTrack (ti);
-	const order = [0, 1, 2, 3, 4, 5];
-	for (let n = 5; n > 0; n--) { const k = Math.floor (rnd () * (n + 1)); [order[n], order[k]] = [order[k], order[n]]; }
-	// the player starts at the back of the grid (and passes everybody: the fun of it)
-	if (!demo) { order.splice (order.indexOf (0), 1); order.push (0); }
-	const ships = [];
 	const others = [0, 1, 2, 3, 4, 5].filter ((p) => p !== pilot);
+	const pilots = [pilot].concat (others);
+	// the grid: at random, the player at the back; in a Grand Prix after the first race, by the points (the leader in front)
+	let order = [0, 1, 2, 3, 4, 5];
+	for (let n = 5; n > 0; n--) { const k = Math.floor (rnd () * (n + 1)); [order[n], order[k]] = [order[k], order[n]]; }
+	if (gp && gp.k > 0) order.sort ((a, b) => gp.pts[pilots[b]] - gp.pts[pilots[a]]);
+	else if (!demo) { order.splice (order.indexOf (0), 1); order.push (0); }
+	const ships = [];
 	for (let n = 0; n < NSHIP; n++)
 	{
 		const g = order.indexOf (n);
-		const easy = CFG.easy ? 0.86 : 0.92;
-		ships.push ({ n, pilot: n === 0 ? pilot : others[n - 1], human: n === 0 && !demo, s: -6 - g * 5.5, lx: 2.4 * (g % 2 ? -1 : 1), v: 0, vl: 0,
-			steer: 0, thrust: 0, item: null, shield: 0, turbo: 0, spin: 0, stuck: 0, skill: Math.min (0.995, easy + rnd () * 0.05 + ti * 0.012),
-			aioff: (rnd () - 0.5) * 2.4, fin: false, finT: 0, lapSt: 0, lap: -1, best: 0, place: g + 1, fireWait: 1, boxT: 0, bonkT: 0, mood: 0, brake: false });
+		const base = CFG.easy ? 0.86 : 0.92;
+		ships.push ({ n, pilot: pilots[n], human: n === 0 && !demo, s: -6 - g * 5.5, lx: 2.4 * (g % 2 ? -1 : 1), v: 0, vl: 0,
+			steer: 0, thrust: 0, brake: false, item: null, ammo: 0, roll: 0, rollItem: null, shield: 0, turbo: 0, star: 0, spin: 0, stuck: 0,
+			skill: Math.min (0.995, base + rnd () * 0.05 + ti * 0.012), aioff: (rnd () - 0.5) * 2.4, fin: false, finT: 0, lapSt: 0, lap: -1, best: 0,
+			place: g + 1, fireWait: 1, bonkT: 0, mood: 0, coins: 0, drift: 0, driftT: 0, driftIn: false, hop: 0, h: 0, vh: 0, air: false, trick: 0,
+			trickT: 0, fall: 0, rescue: 0, stall: 0, sparkLvl: 0 });
 	}
-	G = { ti, demo, auto: demo || Q.has ('auto'), ships, me: ships[0], shots: [], fx: [], t: 0, raceT: 0, phase: 'count', cd: 3.99, lastBeep: 4,
-		boxes: [], msg: '', msgT: 0, shake: 0, cam: { l: ships[0].lx * 0.6, h: 3.2, back: 8 }, doneT: 0, vmax: 92, lastPlace: 6, focus: 0, speedFx: 0 };
-	for (let i = 0; i < N; i++) if (TR.kind[i] & 4) for (const ln of [-1, 0, 1]) G.boxes.push ({ i, s: (i + 0.5) * TR.seglen, l: ln * 3.2, wait: 0 });
+	G = { ti, demo, gp: gp || null, auto: demo || Q.has ('auto'), ships, me: ships[0], shots: [], fx: [], t: 0, raceT: 0, phase: 'count', cd: 3.99,
+		lastBeep: 4, boxes: [], coins: [], msg: '', msgT: 0, shake: 0, cam: { l: ships[0].lx * 0.6, h: 3.2, back: 8 }, doneT: 0,
+		vmax: CLASSES[demo ? 1 : cls].v, lastPlace: 6, focus: 0, speedFx: 0, startPress: null,
+		stats: { jump: 0, trick: 0, fall: 0, mini: 0, coin: 0, star: 0 } };
+	for (let i = 0; i < N; i++)
+	{
+		if (TR.kind[i] & 4) for (const ln of [-1, 0, 1]) G.boxes.push ({ i, s: (i + 0.5) * TR.seglen, l: ln * 3.2, wait: 0 });
+		if (TR.kind[i] & 32) for (let q = 0; q < 5; q++) G.coins.push ({ s: (i + q * 0.45) * TR.seglen, l: TR.lane[i] * 3, wait: 0, ph: q * 0.7 });
+	}
 	if (demo) { G.phase = 'race'; G.cd = 0; for (const s of G.ships) s.v = 40 + rnd () * 20; }
 }
 const playing = () => G && !G.demo && screen === 'play' && !paused;
-const human = (s) => s.human && !G.auto;
+const sparkOf = (t) => t > 2.4 ? 3 : t > 1.4 ? 2 : t > 0.6 ? 1 : 0;
 
 function step (dt)
 {
@@ -380,28 +450,40 @@ function step (dt)
 	{
 		G.cd -= dt;
 		if (Math.floor (G.cd) < G.lastBeep && G.cd > 0) { G.lastBeep = Math.floor (G.cd); Snd.play ('beep'); }
-		if (G.cd <= 0) { G.phase = 'race'; Snd.play ('go'); say (tr ('go'), 1); for (const s of G.ships) if (!s.human) s.v = 4; }
+		if (G.cd <= 0)
+		{
+			G.phase = 'race'; Snd.play ('go'); say (tr ('go'), 1);
+			for (const s of G.ships)
+			{
+				if (!s.human) { s.v = 4; if (rnd () < 0.35) s.turbo = 0.6 + rnd () * 0.5; continue; }
+				// the start: pressed at the right moment, a turbo; too early, the engine coughs
+				const p = G.auto ? 1.4 : G.startPress;
+				if (p !== null && p <= 1.9 && p >= 0.7) { s.turbo = 1.3; s.v = 30; say (tr ('rocketStart'), 1.4); Snd.play ('turbo'); }
+				else if (p !== null && p > 2.6) { s.stall = 0.9; say (tr ('tooEarly'), 1.2); Snd.play ('stall'); }
+			}
+		}
 	}
 	else G.raceT += dt;
 	for (const s of G.ships)
 	{
 		if (G.phase === 'count') { s.steer = 0; s.thrust = 0; continue; }
 		if (s.human && !G.auto && !s.fin) controls (s, dt); else think (s, dt);
+		if (s.roll > 0) { s.roll -= dt; if (s.roll <= 0) { s.item = s.rollItem; s.ammo = s.item === 'rocket3' ? 3 : 1; if (s.human) Snd.play ('got'); } }
 	}
 	physics (dt);
 	shots (dt);
 	for (const b of G.boxes) if (b.wait > 0) b.wait -= dt;
+	for (const c of G.coins) if (c.wait > 0) c.wait -= dt;
 	for (const f of G.fx) f.life -= dt;
 	G.fx = G.fx.filter ((f) => f.life > 0);
 	if (G.msgT > 0) G.msgT -= dt;
 	if (G.shake > 0) G.shake -= dt;
-	// the camera follows the craft watched, softly (its side, its height)
+	// the camera follows the craft watched, softly (its side, its height, a jump)
 	const me = G.ships[G.focus], k = Math.min (1, dt * 5);
-	G.cam.l += (me.lx * 0.6 - G.cam.l) * k;
-	G.cam.h += (3.1 + me.v * 0.006 - G.cam.h) * k;
-	G.speedFx += ((me.turbo > 0 ? 1 : 0) - G.speedFx) * Math.min (1, dt * 4);
+	G.cam.l += (clamp (me.lx, -HW, HW) * 0.6 - G.cam.l) * k;
+	G.cam.h += (3.1 + me.v * 0.006 + (me.fall > 0 ? 0 : me.h * 0.6) - G.cam.h) * k;
+	G.speedFx += ((me.turbo > 0 || me.star > 0 ? 1 : 0) - G.speedFx) * Math.min (1, dt * 4);
 	if (G.demo) { if (G.t > 25) { G.focus = (G.focus + 1) % NSHIP; G.t = 0; } if (G.raceT > 140) startDemo (); return; }
-	// a pass, the end
 	if (G.phase === 'race' && G.me.place < G.lastPlace && G.raceT > 2) Snd.play ('pass');
 	G.lastPlace = G.me.place;
 	if (G.phase === 'race' && G.me.fin)
@@ -417,8 +499,8 @@ function step (dt)
 }
 function say (txt, secs) { G.msg = txt; G.msgT = secs || 1.2; }
 
-// the player's controls
-const IN = { l: false, r: false, down: false, pad: 0, padBrake: false, touch: new Map () };
+// the player's controls: steering, the brake, the drift (a key held; on a phone: a side held a while, steering hard)
+const IN = { l: false, r: false, down: false, drift: false, pad: 0, padBrake: false, padDrift: false, touch: new Map (), touchT: 0 };
 function controls (s, dt)
 {
 	let st = (IN.r ? 1 : 0) - (IN.l ? 1 : 0) + IN.pad;
@@ -427,11 +509,14 @@ function controls (s, dt)
 	s.steer += (st - s.steer) * Math.min (1, dt * 10);
 	s.brake = IN.down || IN.padBrake;
 	s.thrust = s.brake ? 0 : 1;
+	IN.touchT = IN.touch.size ? IN.touchT + dt : 0;
+	s.driftIn = IN.drift || IN.padDrift || (IN.touchT > 0.35 && Math.abs (st) > 0.5);
 }
-// the computer's pilots (Antigrav's Think): the inside of the coming turn, around the craft ahead, the pads
+// the computer's pilots (Antigrav's Think): the inside of the coming turn, around the craft ahead, the pads and boxes;
+// a drift in the long turns (the better pilots, the longer), a trick on a jump
 function think (s, dt)
 {
-	if (s.fin && !s.human) { s.thrust = 0.6; }
+	if (s.fin && !s.human) { s.thrust = 0.6; s.driftIn = false; return; }
 	trackAt (s.s + 22 + s.v * 0.25, 0, 0);
 	const ka = W.cv;
 	let tg = clamp (ka * 70 + s.aioff, -HW + 1.6, HW - 1.6);
@@ -443,11 +528,19 @@ function think (s, dt)
 	}
 	for (const sh of G.shots) if (sh.k === 'gum') { const d = wrapD (sh.s - s.s); if (d > 0 && d < 18 && Math.abs (sh.l - tg) < 1.8) tg = sh.l > 0 ? sh.l - 2.6 : sh.l + 2.6; }
 	trackAt (s.s + 14, 0, 0);
-	if ((W.kind & 2) || ((W.kind & 4) && !s.item)) tg = W.lane * 3;
+	if ((W.kind & 2) || ((W.kind & 4) && !s.item && !s.roll)) tg = W.lane * 3;
+	else if ((W.kind & 32) && s.coins < 10) tg = W.lane * 3;
+	trackAt (s.s, 0, 0);
+	if (W.kind & 64) tg = clamp (tg, -HW + 2.4, HW - 2.4);
 	const st = clamp ((tg - s.lx) * 0.55 - s.vl * 0.3, -1, 1);
 	s.steer += (st - s.steer) * Math.min (1, dt * 8);
+	if (Math.abs (ka) > 0.0075 && !(W.kind & 64)) { if (!s.driftIn) s.driftIn = rnd () < s.skill * dt * 4; }
+	else if (Math.abs (ka) < 0.004) s.driftIn = false;
+	if (s.drift && s.drift * ka <= 0) s.driftIn = false;
+	if (s.driftIn && !s.drift) s.steer = Math.sign (ka) * Math.max (0.5, Math.abs (s.steer));
+	if (s.air && s.trickT > 0 && !s.trick && rnd () < s.skill * dt * 8) s.trick = 0.001;
 	let lim = G.vmax * s.skill;
-	if (Math.abs (ka) > 0.001) lim = Math.min (lim, Math.sqrt (62 / (0.1 * Math.abs (ka))));
+	if (Math.abs (ka) > 0.001) lim = Math.min (lim, Math.sqrt (62 / (0.1 * Math.abs (ka))) * G.vmax / 92);
 	// a little rubber band around the player
 	if (!G.demo && !s.human)
 	{
@@ -463,7 +556,7 @@ function think (s, dt)
 		if (s.fireWait < 0)
 		{
 			const w = s.item;
-			if (w === 'shield' || w === 'turbo') useItem (s);
+			if (w === 'shield' || w === 'turbo' || w === 'star') useItem (s);
 			else if (w === 'gum') { if (behind (s, 40)) useItem (s); }
 			else if (ahead (s, 80)) useItem (s);
 			s.fireWait = 0.4 + rnd () * 1.2;
@@ -482,39 +575,112 @@ function behind (s, dmax)
 	for (const m of G.ships) { if (m === s) continue; const d = wrapD (s.s - m.s); if (d > 0 && d < bd) { bd = d; best = m; } }
 	return best;
 }
+// the end of a gap: where Pouf puts a craft back
+function safeAfter (s0)
+{
+	let s = s0;
+	for (let k = 0; k < 12; k++) { trackAt (s, 0, 0); if (!(W.kind & 128)) break; s += TR.seglen; }
+	return s + TR.seglen * 0.5;
+}
 function physics (dt)
 {
 	const L = TR;
 	for (const s of G.ships)
 	{
+		// fallen: down below, then Pouf the cloud brings the craft back
+		if (s.fall > 0)
+		{
+			s.fall -= dt; s.vh -= 30 * dt; s.h += s.vh * dt; s.v *= 1 - dt * 2;
+			if (s.fall <= 0)
+			{
+				s.rescue = 1.6; s.s = safeAfter (s.s); s.lx = 0; s.vl = 0; s.v = 0; s.h = 7; s.vh = 0; s.drift = 0; s.spin = 0;
+				if (s.human) Snd.play ('rescue');
+			}
+			continue;
+		}
+		if (s.rescue > 0)
+		{
+			s.rescue -= dt; s.h = Math.max (0, 7 * (s.rescue - 0.4) / 1.2); s.v = 0;
+			if (s.rescue <= 0) { s.h = 0; s.v = 18; s.air = false; }
+			continue;
+		}
 		trackAt (s.s, s.lx, 0);
 		const fty = W.fy, fcv = W.cv, kind = W.kind, lane = W.lane;
-		let top = G.vmax * s.skill;
+		let top = G.vmax * s.skill * (1 + s.coins * 0.012);
+		if (s.star > 0) { top *= 1.18; s.star -= dt; }
 		if (s.turbo > 0) { top *= 1.45; s.turbo -= dt; if (s.turbo < 0) s.turbo = 0; }
 		if (s.stuck > 0) { top *= 0.5; s.stuck -= dt; }
-		if (s.thrust) s.v += (top - s.v) * 0.75 * dt * s.thrust;
-		else s.v -= s.v * (s.brake ? 1.4 : 0.45) * dt;
+		if (s.stall > 0) { s.stall -= dt; s.thrust = 0; s.v = 0; }
+		if (s.thrust && !s.air) s.v += (top - s.v) * 0.75 * dt * s.thrust;
+		else if (!s.air) s.v -= s.v * (s.brake ? 1.4 : 0.45) * dt;
 		if (s.v > top) s.v -= (s.v - top) * 1.5 * dt;
-		s.v -= fty * 18 * dt;
+		if (!s.air) s.v -= fty * 18 * dt;
 		if (s.v < 0) s.v = 0;
-		s.vl += s.steer * 46 * dt - fcv * s.v * s.v * 0.085 * dt;
+		// the drift: begun with a hop, it turns into the turn whatever the stick says (less or more), and charges sparks;
+		// let go, the sparks are a turbo (blue, orange, pink: longer and longer)
+		if (!s.drift && s.driftIn && !s.air && s.v > 30 && s.spin <= 0 && Math.abs (s.steer) > 0.3) { s.drift = Math.sign (s.steer); s.driftT = 0; s.hop = 0.18; s.sparkLvl = 0; if (s.human) Snd.play ('hop'); }
+		if (s.drift && (!s.driftIn || s.v < 22 || s.spin > 0))
+		{
+			const lv = sparkOf (s.driftT);
+			if (lv && s.spin <= 0) { G.stats.mini++; s.turbo = Math.max (s.turbo, [0, 0.5, 0.9, 1.3][lv]); s.v += 4 * lv; if (s.human) Snd.play ('mini' + lv); }
+			s.drift = 0; s.driftT = 0; s.sparkLvl = 0;
+		}
+		let st = s.steer, push = 1;
+		if (s.drift)
+		{
+			s.driftT += dt * (0.6 + 0.7 * Math.max (0, s.steer * s.drift));
+			const lv = sparkOf (s.driftT);
+			if (lv > s.sparkLvl) { s.sparkLvl = lv; if (s.human) Snd.play ('spark'); }
+			st = s.drift * (0.55 + 0.5 * clamp (s.steer * s.drift, -1, 1));
+			push = 0.55;
+		}
+		if (s.hop > 0) s.hop -= dt;
+		if (s.air) { st *= 0.35; push *= 0.5; }
+		s.vl += st * 46 * dt - fcv * s.v * s.v * 0.085 * push * dt;
 		s.vl -= s.vl * 3 * dt;
 		s.lx += s.vl * dt;
+		// the walls (none on an open edge: over it, the craft falls)
 		const lim = HW - 1.2;
-		if (Math.abs (s.lx) > lim)
+		if (kind & (64 | 128))
+		{
+			if (Math.abs (s.lx) > HW + 0.4 && !s.air) { fallOff (s); continue; }
+		}
+		else if (Math.abs (s.lx) > lim)
 		{
 			s.lx = lim * Math.sign (s.lx); s.vl = -s.vl * 0.4;
 			s.v -= s.v * 1.6 * dt;
 			if (s.bonkT <= 0 && s.v > 20) { s.bonkT = 0.6; if (s.human) { Snd.play ('bonk'); pow (s, tr ('bonk'), 'bonk'); G.shake = 0.15; } }
 		}
 		if (s.bonkT > 0) s.bonkT -= dt;
+		// a jump: the ramp throws the craft up; a trick in the air (pressed just after the ramp) is a turbo on landing
+		if (s.air)
+		{
+			s.h += s.vh * dt; s.vh -= 30 * dt;
+			if (s.trickT > 0) s.trickT -= dt;
+			if (s.trick > 0 && s.trick < 1) s.trick = Math.min (1, s.trick + dt * 2.2);
+			if (s.h <= 0)
+			{
+				s.h = 0; s.vh = 0; s.air = false;
+				trackAt (s.s, s.lx, 0);
+				if (W.kind & 128) { fallOff (s); continue; }
+				if (s.trick >= 1) { G.stats.trick++; s.turbo = Math.max (s.turbo, 0.8); s.v += 10; if (s.human) { Snd.play ('trick'); say (tr ('super'), 0.9); } }
+				else if (s.human) Snd.play ('land');
+				s.trick = 0;
+			}
+		}
+		else if ((kind & 16) && s.v > 5)
+		{
+			G.stats.jump++; s.air = true; s.vh = 8 + s.v * 0.06; s.h = 0.01; s.trickT = 0.45; s.trick = 0; s.drift = 0;
+			if (s.human) Snd.play ('jump');
+		}
+		else if ((kind & 128) && !s.air) { fallOff (s); continue; }
 		const sold = s.s;
 		s.s += s.v * dt;
 		if (s.spin > 0) s.spin = Math.max (0, s.spin - dt * 1.2);
 		if (s.shield > 0) s.shield = Math.max (0, s.shield - dt);
 		if (s.mood > 0) s.mood -= dt;
 		// a speed pad
-		if ((kind & 2) && Math.abs (s.lx - lane * 3) < 1.8)
+		if ((kind & 2) && !s.air && Math.abs (s.lx - lane * 3) < 1.8)
 		{
 			if (s.turbo < 0.5) { s.turbo = 0.5; s.v += 10; if (s.human) Snd.play ('boost'); }
 		}
@@ -529,26 +695,47 @@ function physics (dt)
 			else if (s.human && lap >= 1) { if (lap === LAPS - 1) { Snd.play ('last'); say (tr ('lastLap'), 1.6); } else { Snd.play ('lap'); say (tr ('lap') + ' ' + (lap + 1) + ' / ' + LAPS, 1.2); } }
 		}
 	}
-	// the ? boxes
+	// the ? boxes: a roulette, then an item
 	for (const b of G.boxes)
 	{
 		if (b.wait > 0) continue;
 		for (const s of G.ships)
-			if (Math.abs (wrapD (s.s - b.s)) < 2.2 && Math.abs (s.lx - b.l) < 1.8)
+			if (Math.abs (wrapD (s.s - b.s)) < 2.2 && Math.abs (s.lx - b.l) < 1.8 && s.h < 2.5 && !s.fall && !s.rescue)
 			{
 				b.wait = 3;
-				if (!s.item) { s.item = rollItem (s); s.fireWait = 0.6 + rnd () * 1.5; if (s.human) Snd.play ('box'); }
+				if (!s.item && !s.roll)
+				{
+					if (s.human && !G.auto) { s.roll = 1.1; s.rollItem = rollItem (s); Snd.play ('box'); }
+					else { s.item = rollItem (s); s.ammo = s.item === 'rocket3' ? 3 : 1; }
+					s.fireWait = 0.6 + rnd () * 1.5;
+				}
 				break;
 			}
 	}
-	// the craft against each other
+	// the coins: ten at most, each a little more speed
+	for (const c of G.coins)
+	{
+		if (c.wait > 0) continue;
+		for (const s of G.ships)
+			if (Math.abs (wrapD (s.s - c.s)) < 1.5 && Math.abs (s.lx - c.l) < 1.4 && s.h < 1.6 && !s.fall && !s.rescue)
+			{
+				c.wait = 12;
+				G.stats.coin++; if (s.coins < 10) s.coins++;
+				if (s.human) Snd.play ('coin');
+				break;
+			}
+	}
+	// the craft against each other (a star knocks the others away)
 	const S = G.ships;
 	for (let a = 0; a < NSHIP - 1; a++)
 		for (let b = a + 1; b < NSHIP; b++)
 		{
 			const A1 = S[a], B1 = S[b], d = wrapD (B1.s - A1.s);
+			if (A1.fall || B1.fall || A1.rescue || B1.rescue || Math.abs (A1.h - B1.h) > 1.5) continue;
 			if (Math.abs (d) < 2.8 && Math.abs (B1.lx - A1.lx) < 2.2)
 			{
+				if (A1.star > 0 && !(B1.star > 0)) { hit (B1, 'star'); continue; }
+				if (B1.star > 0 && !(A1.star > 0)) { hit (A1, 'star'); continue; }
 				const push = (2.2 - Math.abs (B1.lx - A1.lx)) / 2 + 0.02;
 				if (B1.lx >= A1.lx) { B1.lx += push; A1.lx -= push; } else { B1.lx -= push; A1.lx += push; }
 				const x = A1.vl; A1.vl = B1.vl * 0.6; B1.vl = x * 0.6;
@@ -569,28 +756,47 @@ function physics (dt)
 		}
 	}
 }
-// what a ? box gives: the leaders get gum and bubbles, those behind rockets and turbos
+function fallOff (s)
+{
+	G.stats.fall++; s.fall = 1.1; s.air = false; s.vh = 2; s.drift = 0; s.trick = 0; s.mood = 2;
+	loseCoins (s, 3);
+	if (s.human) { Snd.play ('fall'); say (tr ('oops'), 1.2); }
+}
+function loseCoins (s, n)
+{
+	const k = Math.min (n, s.coins);
+	s.coins -= k;
+	if (k && Math.abs (wrapD (s.s - G.ships[G.focus].s)) < 60) for (let i = 0; i < k; i++) G.fx.push ({ k: 'coin', ship: s, a: (i - (k - 1) / 2) * 0.9, life: 0.8, max: 0.8 });
+}
+// what a ? box gives: the leaders get something to defend with, those behind something to catch up
 function rollItem (s)
 {
 	const p = s.place, r = rnd ();
-	if (p <= 2) return r < 0.45 ? 'gum' : r < 0.75 ? 'shield' : r < 0.9 ? 'rocket' : 'turbo';
-	if (p >= 5) return r < 0.45 ? 'turbo' : r < 0.85 ? 'rocket' : 'shield';
-	return ITEMS[Math.floor (r * 4)];
+	const pick = (tab) => { let x = r; for (const [k, w] of tab) { x -= w; if (x <= 0) return k; } return tab[0][0]; };
+	if (p <= 1) return pick ([['gum', 0.4], ['shield', 0.3], ['rocket', 0.2], ['rocket3', 0.1]]);
+	if (p <= 3) return pick ([['rocket', 0.3], ['gum', 0.2], ['rocket3', 0.2], ['turbo', 0.2], ['shield', 0.1]]);
+	if (p <= 4) return pick ([['rocket3', 0.3], ['turbo', 0.3], ['rocket', 0.2], ['star', 0.2]]);
+	return pick ([['star', 0.3], ['turbo', 0.3], ['rocket3', 0.25], ['rocket', 0.15]]);
 }
 function useItem (s)
 {
 	const w = s.item;
-	if (!w) return;
-	s.item = null;
+	if (!w || s.roll > 0 || s.fall > 0 || s.rescue > 0) return;
+	if (--s.ammo <= 0) s.item = null;
 	if (w === 'rocket')
 	{
-		const tgt = ahead (s, 160);
-		G.shots.push ({ k: 'rocket', s: s.s + 3, l: s.lx, v: s.v + 60, own: s, tgt, life: 4 });
+		G.shots.push ({ k: 'rocket', s: s.s + 3, l: s.lx, v: s.v + 60, own: s, tgt: ahead (s, 160), life: 4 });
+		if (s.human) Snd.play ('rocket');
+	}
+	else if (w === 'rocket3')
+	{
+		G.shots.push ({ k: 'rocket', s: s.s + 3, l: s.lx, v: s.v + 70, own: s, tgt: null, life: 3 });
 		if (s.human) Snd.play ('rocket');
 	}
 	else if (w === 'gum') { G.shots.push ({ k: 'gum', s: s.s - 3.5, l: s.lx, v: 0, own: s, life: 40, age: 0 }); if (s.human) Snd.play ('gum'); }
 	else if (w === 'shield') { s.shield = 6; if (s.human) Snd.play ('shield'); }
 	else if (w === 'turbo') { s.turbo = 1.8; s.v += 22; if (s.human) Snd.play ('turbo'); }
+	else if (w === 'star') { G.stats.star++; s.star = 6; s.stuck = 0; s.v += 10; if (s.human) { Snd.play ('starItem'); say (tr ('starOn'), 1); } }
 }
 function shots (dt)
 {
@@ -608,6 +814,7 @@ function shots (dt)
 		{
 			if (p.life <= 0) break;
 			if (s === p.own && (p.k !== 'gum' || p.age < 0.6)) continue;
+			if (s.fall || s.rescue || s.h > 2) continue;
 			if (Math.abs (wrapD (s.s - p.s)) < 2 && Math.abs (s.lx - p.l) < 1.5)
 			{
 				p.life = 0;
@@ -620,9 +827,11 @@ function shots (dt)
 function hit (s, k)
 {
 	const seen = Math.abs (wrapD (s.s - G.ships[G.focus].s)) < 120;
+	if (s.star > 0) return;
 	if (s.shield > 0) { s.shield = 0; if (seen) { Snd.play ('pop'); pow (s, tr ('pop'), 'pop'); } return; }
-	if (k === 'gum') { s.stuck = 1.6; s.v *= 0.55; s.mood = 1.5; if (seen) { Snd.play ('splat'); pow (s, tr ('splat'), 'splat'); } }
-	else { s.v *= 0.35; s.spin = 1; s.vl += (rnd () - 0.5) * 20; s.mood = 1.5; if (seen) { Snd.play ('pow'); pow (s, tr ('pow'), 'pow'); } }
+	s.drift = 0; s.driftT = 0; s.trick = 0;
+	if (k === 'gum') { s.stuck = 1.6; s.v *= 0.55; s.mood = 1.5; loseCoins (s, 2); if (seen) { Snd.play ('splat'); pow (s, tr ('splat'), 'splat'); } }
+	else { s.v *= 0.35; s.spin = 1; s.vl += (rnd () - 0.5) * 20; s.mood = 1.5; loseCoins (s, 3); if (seen) { Snd.play ('pow'); pow (s, tr ('pow'), 'pow'); } }
 	if (s.human) G.shake = 0.35;
 }
 function pow (s, txt, kind) { G.fx.push ({ k: 'pow', ship: s, txt, kind, life: 0.8, max: 0.8 }); }
@@ -761,12 +970,13 @@ const wrapA = (a) => a - TAU * Math.floor ((a + Math.PI) / TAU);
 // a segment: the slab and the pillars under it, the floor, its kerbs and lines, the pads, the walls
 function drawSegment (i, k, t)
 {
-	const L = TR, j = i + 1, c = L.FOG[Math.max (0, Math.min (L.FOG.length - 1, k))], ink = c.ink;
+	const L = TR, j = i + 1, c = L.FOG[Math.max (0, Math.min (L.FOG.length - 1, k))], ink = c.ink, kd = L.kind[i];
+	if (kd & 128) return;			// a gap: nothing (the ground far below)
 	toCam (L.px[i], L.py[i], L.pz[i]);
 	const zc = Math.max (NEAR, CP[2]), lw = Math.max (1, Math.min (5, 0.13 * C.F / zc));
-	const near = k < 40;
+	const near = k < 40, open = kd & 64, top = open ? 0 : WALLH;
 	// a pillar down to the ground (every 8 segments, not in tunnels)
-	if (i % 8 === 4 && L.th.pillar && !L.th.night)
+	if ((i % 8 === 4 || (L.kind[(i + 1) % N] & 128) || (L.kind[(i + N - 1) % N] & 128)) && L.th.pillar && !L.th.night)
 	{
 		const x = L.px[i], y = L.py[i] - 0.9, z = L.pz[i], rx = L.rx[i], rz = L.rz[i];
 		pReset (); pAdd (x - rx * 0.9, y, z - rz * 0.9); pAdd (x + rx * 0.9, y, z + rz * 0.9); pAdd (x + rx * 0.9, L.groundY, z + rz * 0.9); pAdd (x - rx * 0.9, L.groundY, z - rz * 0.9);
@@ -775,25 +985,32 @@ function drawSegment (i, k, t)
 	// the slab's sides (seen from outside the turns)
 	for (const sd of [-1, 1])
 	{
-		pReset (); pTrack (i, sd * (HW + 0.45), WALLH); pTrack (j, sd * (HW + 0.45), WALLH); pTrack (j, sd * (HW + 0.45), -1); pTrack (i, sd * (HW + 0.45), -1);
+		const e = open ? HW : HW + 0.45;
+		pReset (); pTrack (i, sd * e, top); pTrack (j, sd * e, top); pTrack (j, sd * e, -1); pTrack (i, sd * e, -1);
 		pFill (c.skirt, ink, lw);
 	}
 	// the floor
 	const band = Math.floor (i / 3) % 2;
 	pReset (); pTrack (i, -HW, 0); pTrack (i, HW, 0); pTrack (j, HW, 0); pTrack (j, -HW, 0);
 	pFill (band ? c.track1 : c.track2);
+	if (kd & 16) drawRamp (i, c, ink, lw);
 	if (i === 0) { for (let q = 0; q < 8; q++) { pReset (); const a = -HW + q * HW / 4; pTrack (i, a, 0.01); pTrack (i, a + HW / 4, 0.01); pTrack (i + 1, a + HW / 4, 0.01); pTrack (i + 1, a, 0.01); pFill (q % 2 ? '#FFFFFF' : OL); } }
 	if (near)
 	{
 		// the kerbs, the lane dashes
-		const rb = Math.floor (i / 2) % 2 ? c.rumbleA : c.rumbleB;
+		const rb = open ? (Math.floor (i / 2) % 2 ? c.edge : c.rumbleA) : Math.floor (i / 2) % 2 ? c.rumbleA : c.rumbleB;
 		pReset (); pTrack (i, -HW, 0.01); pTrack (i, -HW + 0.9, 0.01); pTrack (j, -HW + 0.9, 0.01); pTrack (j, -HW, 0.01); pFill (rb);
 		pReset (); pTrack (i, HW - 0.9, 0.01); pTrack (i, HW, 0.01); pTrack (j, HW, 0.01); pTrack (j, HW - 0.9, 0.01); pFill (rb);
 		if (i % 4 < 2) for (const d of [-HW / 3, HW / 3]) { pReset (); pTrack (i, d - 0.15, 0.01); pTrack (i, d + 0.15, 0.01); pTrack (j, d + 0.15, 0.01); pTrack (j, d - 0.15, 0.01); pFill (c.line); }
 	}
 	// a speed pad: chevrons
 	if (L.kind[i] & 2) drawPad (i, k, t);
-	// the walls (their inner faces), their tops, the ink along them
+	// the walls (their inner faces), their tops, the ink along them (an open edge: the ink only)
+	if (open)
+	{
+		for (const sd of [-1, 1]) { const a = sd * HW; wLine (L.px[i] + L.rx[i] * a, L.py[i] + L.ry[i] * a, L.pz[i] + L.rz[i] * a, L.px[j] + L.rx[j] * a, L.py[j] + L.ry[j] * a, L.pz[j] + L.rz[j] * a, ink, 0.12, 1); }
+		return;
+	}
 	for (const sd of [-1, 1])
 	{
 		pReset (); pTrack (i, sd * HW, 0); pTrack (j, sd * HW, 0); pTrack (j, sd * HW, WALLH); pTrack (i, sd * HW, WALLH);
@@ -805,6 +1022,22 @@ function drawSegment (i, k, t)
 			L.px[j] + L.rx[j] * a + L.ux[j] * WALLH, L.py[j] + L.ry[j] * a + L.uy[j] * WALLH, L.pz[j] + L.rz[j] * a + L.uz[j] * WALLH, ink, 0.13, 1);
 		if (near) wLine (L.px[i] + L.rx[i] * a, L.py[i] + L.ry[i] * a, L.pz[i] + L.rz[i] * a, L.px[j] + L.rx[j] * a, L.py[j] + L.ry[j] * a, L.pz[j] + L.rz[j] * a, ink, 0.08, 1);
 		if (i % 2 === 0 && near) wLine (L.px[i] + L.rx[i] * a, L.py[i] + L.ry[i] * a, L.pz[i] + L.rz[i] * a, L.px[i] + L.rx[i] * a + L.ux[i] * WALLH, L.py[i] + L.ry[i] * a + L.uy[i] * WALLH, L.pz[i] + L.rz[i] * a + L.uz[i] * WALLH, ink, 0.06, 1);
+	}
+}
+// a jump ramp: a wedge rising over two segments, striped
+function drawRamp (i, c, ink, lw)
+{
+	const L = TR, first = !(L.kind[(i + N - 1) % N] & 16), h0 = first ? 0 : 0.7, h1 = first ? 0.7 : 1.4, j = i + 1;
+	for (let q = 0; q < 6; q++)
+	{
+		const a = -HW + q * HW / 3, b = a + HW / 3;
+		pReset (); pTrack (i, a, h0 + 0.02); pTrack (i, b, h0 + 0.02); pTrack (j, b, h1 + 0.02); pTrack (j, a, h1 + 0.02);
+		pFill ((q + (first ? 0 : 1)) % 2 ? c.ramp1 : c.ramp2, ink, lw);
+	}
+	for (const sd of [-1, 1])
+	{
+		pReset (); pTrack (i, sd * HW, 0); pTrack (j, sd * HW, 0); pTrack (j, sd * HW, h1 + 0.02); pTrack (i, sd * HW, h0 + 0.02);
+		pFill (c.ramp2, ink, lw);
 	}
 }
 function drawPad (i, k, t)
@@ -907,22 +1140,36 @@ function sprite (fn, x, y, z, roll, minPx)
 }
 function drawShipAt (s, t)
 {
-	const hov = 0.75 + 0.07 * Math.sin (t * 6 + s.n);
+	const hov = 0.75 + 0.07 * Math.sin (t * 6 + s.n) + s.h + (s.hop > 0 ? Math.sin (s.hop / 0.18 * Math.PI) * 0.5 : 0);
 	trackAt (s.s, s.lx, 0);
-	const ux = W.ux, uy = W.uy, uz = W.uz, bx = W.x, by = W.y, bz = W.z;
-	// the shadow on the floor
-	if (project (bx, by + 0.02, bz))
+	const ux = W.ux, uy = W.uy, uz = W.uz, bx = W.x, by = W.y, bz = W.z, ground = !(W.kind & 128) && Math.abs (s.lx) < HW + 0.5;
+	// the shadow on the floor (smaller and paler up in the air)
+	if (ground && s.fall <= 0 && project (bx, by + 0.02, bz))
 	{
-		g.fillStyle = 'rgba(30,20,50,.35)'; g.beginPath (); g.ellipse (P.x, P.y, 1.3 * P.k, 0.42 * P.k, 0, 0, TAU); g.fill ();
+		const k = 1 / (1 + Math.max (0, s.h) * 0.25);
+		g.fillStyle = 'rgba(30,20,50,' + (0.35 * k).toFixed (2) + ')'; g.beginPath (); g.ellipse (P.x, P.y, 1.3 * P.k * k, 0.42 * P.k * k, 0, 0, TAU); g.fill ();
 	}
 	const x = bx + ux * hov, y = by + uy * hov, z = bz + uz * hov;
 	if (!project (x, y, z)) return;
 	const sx = P.x, sy = P.y;
 	if (!project (x + ux, y + uy, z + uz)) return;
-	let roll = Math.atan2 (P.x - sx, sy - P.y) + s.steer * 0.25;
+	let roll = Math.atan2 (P.x - sx, sy - P.y) + s.steer * 0.25 + s.drift * 0.18;
 	if (s.spin > 0) roll += Math.sin (s.spin * 18) * 0.5 * s.spin;
+	if (s.fall > 0) roll += (1.1 - s.fall) * 2;
 	const pilot = A.PILOTS[s.pilot];
-	sprite ((ink) => A.drawShip (g, pilot, { ink, t: t + s.n, lean: s.steer, thrust: s.thrust ? 1 : 0.3, turbo: s.turbo > 0, shield: s.shield > 0, spin: s.spin, stuck: s.stuck > 0 }), x, y, z, roll, 0.5);
+	if (s.rescue > 0)
+		sprite ((ink) => { if (A.drawRescue) { g.save (); g.translate (0, -1.2); A.drawRescue (g, { ink, t }); g.restore (); } }, x, y, z, 0, 0.5);
+	sprite ((ink) => A.drawShip (g, pilot, { ink, t: t + s.n, lean: s.drift ? s.drift : s.steer, thrust: s.thrust ? 1 : 0.3, turbo: s.turbo > 0, shield: s.shield > 0,
+		spin: s.spin, stuck: s.stuck > 0, star: s.star > 0, drift: s.drift, spark: s.drift ? sparkOf (s.driftT) : 0, air: s.air || s.rescue > 0, trick: s.trick }), x, y, z, roll, 0.5);
+}
+function drawCoinAt (c, t)
+{
+	trackAt (c.s, c.l, 0.9 + 0.12 * Math.sin (t * 3 + c.ph));
+	sprite ((ink) =>
+	{
+		if (A.drawCoin) A.drawCoin (g, { ink, t, phase: c.ph });
+		else { g.beginPath (); g.ellipse (0, 0, 0.5 * Math.abs (Math.cos (t * 3 + c.ph)) + 0.05, 0.5, 0, 0, TAU); g.fillStyle = '#FFD23F'; g.fill (); g.lineWidth = ink; g.strokeStyle = OL; g.stroke (); }
+	}, W.x, W.y, W.z, 0, 0.6);
 }
 function drawWorld (t)
 {
@@ -935,6 +1182,7 @@ function drawWorld (t)
 	// (d: how far ahead of the camera along the track; the segment it is on)
 	const put = (d, o) => { const k = Math.floor ((camS + d) / L.seglen) - c0; if (k >= 0 && k <= VD) (ON[k] || (ON[k] = [])).push (o); o.z = d; };
 	for (const s of G.ships) put (wrapD (s.s - camS), { f: () => drawShipAt (s, t) });
+	for (const c of G.coins) if (c.wait <= 0) put (wrapD (c.s - camS), { f: () => drawCoinAt (c, t) });
 	for (const b of G.boxes) if (b.wait <= 0) put (wrapD (b.s - camS), { f: () => { trackAt (b.s, b.l, 1.3 + 0.2 * Math.sin (t * 3 + b.l)); sprite ((ink) => A.drawBox (g, { ink, t: t + b.l }), W.x, W.y, W.z); } });
 	for (const p of G.shots)
 	{
@@ -983,12 +1231,24 @@ function drawHUD (t)
 	const lap = clamp (me.lap + 1, 1, LAPS);
 	otext (tr ('lap') + ' ' + lap + '/' + LAPS, x0 + 4, y0 + 74 * u, 22 * u, '#FFFFFF', 'left');
 	otext (clock (G.raceT), x0 + 4, y0 + 100 * u, 18 * u, '#FFFFFF', 'left');
+	// the coins
+	g.save (); g.translate (x0 + 16 * u, y0 + 130 * u); g.lineJoin = 'round'; g.lineCap = 'round';
+	if (A.drawCoinIcon) A.drawCoinIcon (g, 12 * u); else { g.beginPath (); g.arc (0, 0, 12 * u, 0, TAU); g.fillStyle = '#FFD23F'; g.fill (); g.lineWidth = 3; g.strokeStyle = OL; g.stroke (); }
+	g.restore ();
+	otext ('× ' + me.coins, x0 + 34 * u, y0 + 131 * u, 20 * u, me.coins >= 10 ? '#FFD23F' : '#FFFFFF', 'left');
+	if (G.gp) otext (tr ('gpRace', { n: G.gp.k + 1 }), x0 + 4, y0 + 160 * u, 16 * u, '#FFD23F', 'left');
 	// the item: a slot at the top (keyboard), a big button at the bottom (touch)
 	const r = (touchUI ? 40 : 30) * u;
 	itemBtn.x = touchUI ? VW / 2 : VW / 2; itemBtn.y = touchUI ? VH - safe.b - r - 18 : y0 + r + 2; itemBtn.r = r;
 	g.save (); g.translate (itemBtn.x, itemBtn.y);
 	g.beginPath (); g.arc (0, 0, r, 0, TAU); g.fillStyle = me.item ? 'rgba(255,253,248,.95)' : 'rgba(255,253,248,.45)'; g.fill (); g.lineWidth = 3.5; g.strokeStyle = OL; g.stroke ();
-	if (me.item) { const b = 1 + 0.06 * Math.sin (t * 8); g.scale (b, b); g.lineJoin = 'round'; g.lineCap = 'round'; A.drawItemIcon (g, me.item, r * 0.72); }
+	if (me.roll > 0) { g.lineJoin = 'round'; g.lineCap = 'round'; A.drawItemIcon (g, ITEMS[Math.floor (me.roll * 14) % ITEMS.length], r * 0.62); if (Math.floor (me.roll * 14) !== me.rollTick) { me.rollTick = Math.floor (me.roll * 14); Snd.play ('tick'); } }
+	else if (me.item)
+	{
+		const b = 1 + 0.06 * Math.sin (t * 8); g.scale (b, b); g.lineJoin = 'round'; g.lineCap = 'round';
+		A.drawItemIcon (g, me.item === 'rocket3' && me.ammo < 3 ? 'rocket' : me.item, r * 0.72);
+		if (me.item === 'rocket3' && me.ammo < 3) otext ('×' + me.ammo, r * 0.7, r * 0.7, r * 0.5, '#FFFFFF', 'center', 3);
+	}
 	else { g.fillStyle = 'rgba(43,35,64,.35)'; g.font = '900 ' + Math.round (r) + 'px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText ('?', 0, 2); }
 	g.restore ();
 	// the speed
@@ -1033,6 +1293,7 @@ function drawHUD (t)
 	{
 		const n = Math.ceil (G.cd), f = G.cd - Math.floor (G.cd);
 		otext (String (n), VW / 2, VH * 0.38, (90 + 50 * f) * u, ['#3DD68C', '#FFD23F', '#FF9F1C', '#FF5A5F'][n] || '#FFF', 'center', 10);
+		if (G.startPress === null) otext (tr (touchUI ? 'startTouch' : 'startKeys'), VW / 2, VH * 0.38 + 90 * u, 17 * u, '#FFFFFF', 'center', 4);
 	}
 	if (G.msgT > 0)
 	{
@@ -1080,6 +1341,15 @@ function drawFx (t)
 			A.drawPow (g, f.txt, sz, t);
 			g.restore ();
 		}
+		else if (f.k === 'coin')
+		{
+			// a coin lost, flying off
+			const s = f.ship, a = 1 - f.life / f.max;
+			trackAt (s.s, s.lx + f.a * a * 3, 1 + s.h + 3 * a - 4 * a * a);
+			if (!project (W.x, W.y, W.z)) continue;
+			g.save (); g.translate (P.x, P.y); g.globalAlpha = Math.min (1, f.life * 3); g.lineJoin = 'round';
+			if (A.drawCoinIcon) A.drawCoinIcon (g, Math.max (6, Math.min (16, P.k * 0.5))); g.restore ();
+		}
 		else if (f.k === 'conf')
 		{
 			const age = 3 - f.life, x = (f.x + f.vx * age) * VW, y = (f.y + f.vy * age) * VH;
@@ -1095,7 +1365,7 @@ function draw (t)
 	g.lineJoin = 'round'; g.lineCap = 'round';
 	drawWorld (t);
 	drawFx (t);
-	if (!G.demo && screen !== 'title') drawHUD (t);
+	if (!G.demo && (screen === 'play' || screen === 'pause')) drawHUD (t);
 }
 
 // ---- the screens ------------------------------------------------------------------------------------------------
@@ -1119,13 +1389,16 @@ function titleBest ()
 	$('bestTitle').textContent = n ? tr ('allStars', { n }) : '';
 }
 function startDemo () { newRace (Math.floor (Math.random () * NTRACK), Math.floor (Math.random () * 6), true); paused = false; }
-function play (ti)
+function play (ti, gp)
 {
 	Snd.init ();
-	newRace (ti, prog.pilot | 0, false);
+	newRace (ti, prog.pilot | 0, false, gp);
 	paused = false;
+	IN.touch.clear (); IN.touchT = 0;
 	show ('play');
 }
+// the Grand Prix: the four circuits in a row, the points added up
+function playGP () { play (0, { k: 0, pts: [0, 0, 0, 0, 0, 0], last: null }); }
 function pause ()
 {
 	if (!playing () || G.phase === 'done') return;
@@ -1148,6 +1421,8 @@ function results ()
 	let opened = false;
 	if (place <= 3 && prog.unlocked < NTRACK && prog.unlocked === ti + 1) { prog.unlocked = ti + 2; opened = true; }
 	store.set ('progress', prog);
+	const gp = G.gp;
+	if (gp) { gp.last = order.map ((s) => s.pilot); order.forEach ((s, q) => { gp.pts[s.pilot] += POINTS[q]; }); }
 	$('resTitle').textContent = place === 1 ? tr ('win') : place <= 3 ? tr ('podium') : tr ('done');
 	$('resTitle').classList.toggle ('red', place > 3);
 	$('resName').textContent = tr ('circuit', { n: ti + 1 }) + ' · ' + theme (TRACKS[ti].theme).name[lang ()];
@@ -1159,20 +1434,54 @@ function results ()
 		const td = (h) => { const c = document.createElement ('td'); if (typeof h === 'string') c.textContent = h; else c.append (...h); tr0.appendChild (c); return c; };
 		td (placeName (q + 1));
 		td ([faceCanvas (p, q === 0 ? 'win' : 'happy', 26), document.createTextNode (p.name[lang ()])]);
-		td (clock (s.finT));
+		td (gp ? '+' + POINTS[q] + ' → ' + gp.pts[s.pilot] + ' ' + tr ('pts') : clock (s.finT));
 		tb.appendChild (tr0);
 	});
 	$('resNote').textContent = (me.best ? tr ('bestLap', { t: clock (me.best) }) + ' · ' : '') + tr ('bestTime', { t: clock (prog.best[ti]) }) + (opened ? '\n' + tr ('opened') : place > 3 && prog.unlocked === ti + 1 && ti < NTRACK - 1 ? '\n' + tr ('unlockNote') : '');
 	$('resNote').style.whiteSpace = 'pre-line';
 	$('resRecord').classList.toggle ('on', rec);
-	const canNext = ti + 1 < prog.unlocked && ti < NTRACK - 1;
+	const canNext = gp ? true : ti + 1 < prog.unlocked && ti < NTRACK - 1;
 	$('btNext').style.display = canNext ? '' : 'none';
+	$('btNext').textContent = gp ? tr ('nextRace') : tr ('next');
+	$('btRetry').style.display = gp ? 'none' : '';
 	const st = $('resStars').children;
 	for (let i = 0; i < 3; i++) st[i].className = 'star' + (i === 1 ? ' mid' : '');
 	show ('results');
 	Snd.engine (false);
 	for (let i = 0; i < 3; i++) setTimeout (() => { if (screen !== 'results') return; if (i < stars) { st[i].classList.add ('on', 'pop'); Snd.play ('star'); } }, 350 + i * 220);
 	live (placeName (place) + ' — ' + stars + ' ★');
+}
+// the end of a Grand Prix: the standings, a cup for the podium
+function cupScreen (gp)
+{
+	const order = [0, 1, 2, 3, 4, 5].sort ((a, b) => gp.pts[b] - gp.pts[a] || gp.last.indexOf (a) - gp.last.indexOf (b));
+	const me = prog.pilot | 0, rank = order.indexOf (me) + 1;
+	$('cupTitle').textContent = rank === 1 ? tr ('cupWin') : rank === 2 ? tr ('cup2') : rank === 3 ? tr ('cup3') : tr ('cupNone');
+	const c = $('cupArt'), gg = c.getContext ('2d');
+	gg.setTransform (1, 0, 0, 1, 0, 0); gg.clearRect (0, 0, c.width, c.height);
+	gg.translate (c.width / 2, c.height / 2); gg.lineJoin = 'round'; gg.lineCap = 'round';
+	if (rank <= 3 && A.drawTrophy) A.drawTrophy (gg, rank, c.height * 0.42, { ink: 4, t: 0 });
+	else { gg.scale (c.height * 0.3, c.height * 0.3); A.drawFace (gg, A.PILOTS[me], 1, 'ouch', 0.08); }
+	const tb = $('cupRank'); tb.innerHTML = '';
+	order.forEach ((p, q) =>
+	{
+		const row = document.createElement ('tr'); if (p === me) row.className = 'me';
+		const a = document.createElement ('td'); a.textContent = placeName (q + 1);
+		const b = document.createElement ('td'); b.append (faceCanvas (A.PILOTS[p], q === 0 ? 'win' : 'happy', 26), document.createTextNode (A.PILOTS[p].name[lang ()]));
+		const d = document.createElement ('td'); d.textContent = gp.pts[p] + ' ' + tr ('pts');
+		row.append (a, b, d); tb.appendChild (row);
+	});
+	let note = '';
+	if (rank <= 3)
+	{
+		if (!prog.cup || rank < prog.cup) prog.cup = rank;
+		if (prog.unlocked < NTRACK) { prog.unlocked = NTRACK; note = tr ('allOpen'); }
+		store.set ('progress', prog);
+		Snd.play ('cup');
+	}
+	$('cupNote').textContent = note;
+	show ('cup');
+	live ($('cupTitle').textContent);
 }
 function live (s) { $('live').textContent = s; }
 function faceCanvas (p, mood, px)
@@ -1196,6 +1505,18 @@ function buildSelect ()
 		box.appendChild (b);
 	});
 	$('pilotName').textContent = A.PILOTS[prog.pilot | 0].name[lang ()];
+	// the speed class (Antigrav's classes)
+	const cb = $('classSeg'); cb.innerHTML = '';
+	CLASSES.forEach ((C0, k) =>
+	{
+		const b = document.createElement ('button'); b.type = 'button'; b.setAttribute ('aria-pressed', String (k === cls));
+		if (A.drawSpeedClass) { const c = document.createElement ('canvas'); c.width = c.height = 48; const gg = c.getContext ('2d'); gg.translate (24, 24); gg.lineJoin = 'round'; gg.lineCap = 'round'; A.drawSpeedClass (gg, k, 20); b.append (c); }
+		b.append (document.createTextNode (tr (C0.k)));
+		b.addEventListener ('click', () => { cls = k; prog.cls = k; store.set ('progress', prog); buildSelect (); });
+		cb.appendChild (b);
+	});
+	const cupc = $('gpCup');
+	if (cupc) { const gg = cupc.getContext ('2d'); gg.setTransform (1, 0, 0, 1, 0, 0); gg.clearRect (0, 0, 64, 64); gg.translate (32, 32); gg.lineJoin = 'round'; gg.lineCap = 'round'; if (A.drawTrophy) A.drawTrophy (gg, prog.cup || 1, 26, { ink: 2.4, t: 0 }); cupc.style.opacity = prog.cup ? 1 : 0.55; }
 	const tb = $('tracks'); tb.innerHTML = '';
 	const lock = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="#7A8794" stroke="#2B2340" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#2B2340" stroke-width="2.4"/></svg>';
 	TRACKS.forEach ((D, i) =>
@@ -1225,7 +1546,8 @@ function buildHow ()
 {
 	$('howText').textContent = tr (touchUI ? 'howTouch' : 'howKeys');
 	const ul = $('legendItems'); ul.innerHTML = '';
-	for (const [it, key] of [['rocket', 'iRocket'], ['gum', 'iGum'], ['shield', 'iShield'], ['turbo', 'iTurbo']])
+	$('howDrift').textContent = tr (touchUI ? 'howDriftTouch' : 'howDrift');
+	for (const [it, key] of [['rocket', 'iRocket'], ['rocket3', 'iRocket3'], ['gum', 'iGum'], ['shield', 'iShield'], ['turbo', 'iTurbo'], ['star', 'iStar']])
 	{
 		const li = document.createElement ('li'), c = document.createElement ('canvas'); c.className = 'ico'; c.width = c.height = 72;
 		const gg = c.getContext ('2d'); gg.translate (36, 36); gg.lineJoin = 'round'; gg.lineCap = 'round'; A.drawItemIcon (gg, it, 30);
@@ -1238,7 +1560,7 @@ function applyLang ()
 	document.documentElement.lang = lang () ? 'fr' : 'en';
 	document.querySelectorAll ('[data-k]').forEach ((el) => { el.textContent = tr (el.dataset.k); });
 	document.querySelectorAll ('[data-kl]').forEach ((el) => { el.setAttribute ('aria-label', tr (el.dataset.kl)); el.title = tr (el.dataset.kl); });
-	document.querySelectorAll ('.seg button').forEach ((b) => b.setAttribute ('aria-pressed', String ((b.dataset.lang === 'fr') === !!lang ())));
+	document.querySelectorAll ('.seg button[data-lang]').forEach ((b) => b.setAttribute ('aria-pressed', String ((b.dataset.lang === 'fr') === !!lang ())));
 	if (screen === 'select') buildSelect ();
 	if (screen === 'how') buildHow ();
 	if (screen === 'title') titleBest ();
@@ -1253,7 +1575,10 @@ function saveSettings ()
 }
 
 // ---- input ------------------------------------------------------------------------------------------------------
-const KL = ['ArrowLeft', 'a', 'q'], KR = ['ArrowRight', 'd'], KD = ['ArrowDown', 's'], KF = [' ', 'Enter', 'Shift', 'x', 'Control'];
+const KL = ['ArrowLeft', 'a', 'q'], KR = ['ArrowRight', 'd'], KD = ['ArrowDown', 's'], KF = [' ', 'Enter', 'x', 'Control'], KJ = ['Shift', 'c', 'v'], KU = ['ArrowUp', 'w', 'z'];
+// before GO: the moment of the press (a rocket start); in the air just after a ramp: a trick
+function startPress () { if (G.phase === 'count' && G.startPress === null) G.startPress = G.cd; }
+function trickPress () { const s = G.me; if (s.air && s.trickT > 0 && !s.trick) { s.trick = 0.001; } }
 document.addEventListener ('keydown', (e) =>
 {
 	const k = e.key.length === 1 ? e.key.toLowerCase () : e.key;
@@ -1262,8 +1587,9 @@ document.addEventListener ('keydown', (e) =>
 		if (KL.includes (k)) { IN.l = true; e.preventDefault (); return; }
 		if (KR.includes (k)) { IN.r = true; e.preventDefault (); return; }
 		if (KD.includes (k)) { IN.down = true; e.preventDefault (); return; }
-		if (KF.includes (k)) { e.preventDefault (); if (!e.repeat && G.phase === 'race') useItem (G.me); return; }
-		if (k === 'ArrowUp' || k === 'w' || k === 'z') { e.preventDefault (); return; }
+		if (KF.includes (k)) { e.preventDefault (); if (!e.repeat) { if (G.phase === 'race') useItem (G.me); startPress (); } return; }
+		if (KJ.includes (k)) { e.preventDefault (); IN.drift = true; if (!e.repeat) trickPress (); return; }
+		if (KU.includes (k)) { e.preventDefault (); if (!e.repeat) startPress (); return; }
 		if (k === 'p' || k === 'Escape') { e.preventDefault (); pause (); return; }
 	}
 	if ((k === 'p' || k === 'Escape') && screen === 'pause') { e.preventDefault (); resume (); return; }
@@ -1275,12 +1601,13 @@ document.addEventListener ('keyup', (e) =>
 	if (KL.includes (k)) IN.l = false;
 	if (KR.includes (k)) IN.r = false;
 	if (KD.includes (k)) IN.down = false;
+	if (KJ.includes (k)) IN.drift = false;
 });
 function back ()
 {
 	if (screen === 'settings') { show (settingsFrom); return; }
 	if (screen === 'pause') { resume (); return; }
-	if (screen === 'results') { menu (); return; }
+	if (screen === 'results' || screen === 'cup') { menu (); return; }
 	show ('title');
 }
 // a finger (or the mouse): the item button, else hold a half to steer that way
@@ -1288,6 +1615,7 @@ cv.addEventListener ('pointerdown', (e) =>
 {
 	Snd.init ();
 	if (!playing ()) return;
+	startPress (); trickPress ();
 	if (Math.hypot (e.clientX - itemBtn.x, e.clientY - itemBtn.y) < itemBtn.r + 12) { if (G.phase === 'race') useItem (G.me); return; }
 	IN.touch.set (e.pointerId, e.clientX < VW / 2 ? -1 : 1);
 	try { cv.setPointerCapture (e.pointerId); } catch (er) { /* fine */ }
@@ -1298,7 +1626,7 @@ cv.addEventListener ('pointerup', endPtr);
 cv.addEventListener ('pointercancel', endPtr);
 cv.addEventListener ('contextmenu', (e) => e.preventDefault ());
 document.addEventListener ('touchmove', (e) => { if (screen === 'play') e.preventDefault (); }, { passive: false });
-// the gamepad: the stick or the cross steers, A / X / RB use the item, B brakes, Start pauses
+// the gamepad: the stick or the cross steers, A / Y use the item, X / LB / RB / RT drift (and a trick), B / LT brake, Start pauses
 let padPrev = 0;
 function pollPad ()
 {
@@ -1311,11 +1639,12 @@ function pollPad ()
 		const a = gp.axes[0] || 0;
 		if (Math.abs (a) > 0.18) ax = a;
 		if (bt (14)) ax = -1; if (bt (15)) ax = 1;
-		if (bt (0) || bt (2) || bt (5) || bt (7)) b |= 1; if (bt (9)) b |= 2; if (bt (1) || bt (6)) b |= 4;
+		if (bt (0) || bt (3)) b |= 1; if (bt (9)) b |= 2; if (bt (1) || bt (6)) b |= 4; if (bt (2) || bt (4) || bt (5) || bt (7)) b |= 8;
+		if (bt (12)) b |= 16;
 	}
-	IN.pad = ax; IN.padBrake = !!(b & 4) && playing ();
+	IN.pad = ax; IN.padBrake = !!(b & 4) && playing (); IN.padDrift = !!(b & 8) && playing ();
 	const pr = b & ~padPrev; padPrev = b;
-	if (playing ()) { if ((pr & 1) && G.phase === 'race') useItem (G.me); if (pr & 2) pause (); return; }
+	if (playing ()) { if ((pr & 1) && G.phase === 'race') useItem (G.me); if (pr & (1 | 16)) startPress (); if (pr & 8) trickPress (); if (pr & 2) pause (); return; }
 	if (screen === 'pause' && (pr & 2)) { resume (); return; }
 	if (pr & 1) { const s = document.querySelector ('.screen.on'), btn = s && (document.activeElement && s.contains (document.activeElement) ? document.activeElement : s.querySelector ('.kbtn.big')); if (btn) btn.click (); }
 	if (pr & 4) back ();
@@ -1333,10 +1662,18 @@ $('btPause').addEventListener ('click', () => pause ());
 $('btResume').addEventListener ('click', resume);
 $('btRestart').addEventListener ('click', () => play (G.ti));
 $('btRetry').addEventListener ('click', () => play (G.ti));
-$('btNext').addEventListener ('click', () => play (Math.min (NTRACK - 1, G.ti + 1)));
+$('btNext').addEventListener ('click', () =>
+{
+	const gp = G.gp;
+	if (!gp) { play (Math.min (NTRACK - 1, G.ti + 1)); return; }
+	if (gp.k >= NTRACK - 1) { cupScreen (gp); return; }
+	gp.k++; play (gp.k, gp);
+});
+$('btGP').addEventListener ('click', playGP);
+$('btCupOk').addEventListener ('click', () => menu ());
 document.querySelectorAll ('[data-go]').forEach ((b) => b.addEventListener ('click', () => { const go = b.dataset.go; if (go === 'menu') menu (); else show (go); }));
 for (const [id, k] of SETS) { $(id).checked = !!CFG[k]; $(id).addEventListener ('change', saveSettings); }
-document.querySelectorAll ('.seg button').forEach ((b) => b.addEventListener ('click', () => { if (window.Site) Site.setLang (b.dataset.lang); applyLang (); }));
+document.querySelectorAll ('.seg button[data-lang]').forEach ((b) => b.addEventListener ('click', () => { if (window.Site) Site.setLang (b.dataset.lang); applyLang (); }));
 if (window.Site) Site.onLang (applyLang);
 document.addEventListener ('visibilitychange', () => { if (document.hidden) pause (); });
 window.addEventListener ('blur', () => pause ());
@@ -1365,7 +1702,7 @@ function loop (ts)
 	requestAnimationFrame (loop);
 }
 // test hooks (tools/test-zoomo.js): the state, the simulation advanced by hand
-window.Zoomo = { get G () { return G; }, get TR () { return TR; }, play, pause, resume, show, results, useItem, prog, TRACKS,
+window.Zoomo = { get G () { return G; }, get TR () { return TR; }, play, playGP, pause, resume, show, results, useItem, prog, TRACKS,
 	step: (n) => { for (let i = 0; i < n && G; i++) { step (DT); if (screen !== 'play') break; } }, draw: () => draw (performance.now () / 1000), get screen () { return screen; } };
 
 startDemo ();

@@ -190,3 +190,10 @@ body { background: linear-gradient(#5EC8FF, #CFF3FF); font-family: var(--font); 
 	.tracks { grid-template-columns: repeat(4, 1fr); }
 	.tracks .tile { min-height: 80px; }
 }
+
+/* the Grand Prix button, the speed classes, the cup */
+.gpbtn { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.gpbtn canvas { width: 40px; height: 40px; margin: -8px 0; }
+.seg.cls button { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 4px 8px; font-size: 13px; }
+.seg.cls canvas { width: 28px; height: 28px; }
+.cupart { width: 200px; height: 166px; align-self: center; }

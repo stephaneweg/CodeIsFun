@@ -33,10 +33,40 @@ const ok = (c, m) => { console.log ((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails+
 			{
 				let used = 0;
 				for (let k = 0; k < 400 && Zoomo.screen === 'play'; k++) { Zoomo.step (120); if (Zoomo.G.me.item) { Zoomo.useItem (Zoomo.G.me); used++; } Zoomo.draw (); }
-				return { screen: Zoomo.screen, laps: Zoomo.G.me.lap, t: Math.round (Zoomo.G.raceT), place: Zoomo.G.me.place, used, stars: Zoomo.prog.stars.slice (), unlocked: Zoomo.prog.unlocked };
+				return { screen: Zoomo.screen, laps: Zoomo.G.me.lap, t: Math.round (Zoomo.G.raceT), place: Zoomo.G.me.place, used, stars: Zoomo.prog.stars.slice (), unlocked: Zoomo.prog.unlocked, stats: Zoomo.G.stats,
+					stuck: Zoomo.G.ships.filter ((s) => s.fall > 0 || s.rescue > 0 || !isFinite (s.s)).length };
 			});
 			ok (r.screen === 'results' && r.stars[ti - 1] >= 1 && r.used > 0, 'the autopilot finishes circuit ' + ti + ' ' + JSON.stringify (r));
+			ok (r.stats.jump > 5 && r.stats.mini > 5 && r.stats.coin > 10 && r.stats.trick > 0 && !r.stuck, 'circuit ' + ti + ': jumps, drifts, tricks, coins happen');
 		}
+		// a fall off an open edge: Pouf brings the craft back onto the track
+		await page.goto (url + '?lang=en&seed=9&track=3'); await page.waitForTimeout (150);
+		const f = await page.evaluate (() =>
+		{
+			const G = Zoomo.G, L = Zoomo.TR, me = G.me;
+			let i = 0; while (!(L.kind[i] & 64)) i++;
+			Zoomo.step (120 * 4.2);
+			me.s = (i + 3) * L.seglen; me.lx = 8; me.v = 50; me.vl = 5;
+			Zoomo.step (2);
+			const fell = me.fall > 0;
+			Zoomo.step (120 * 3.5);
+			return { fell, back: me.fall <= 0 && me.rescue <= 0 && Math.abs (me.lx) < 6 && me.v > 10 };
+		});
+		ok (f.fell && f.back, 'a fall, then Pouf the cloud ' + JSON.stringify (f));
+		// the Grand Prix: four races, the points, the cup
+		await page.goto (url + '?lang=en&auto&seed=4'); await page.waitForTimeout (150);
+		const cup = await page.evaluate (() =>
+		{
+			Zoomo.playGP ();
+			for (let race = 0; race < 4; race++)
+			{
+				for (let k = 0; k < 400 && Zoomo.screen === 'play'; k++) { Zoomo.G.auto = true; Zoomo.step (120); }
+				if (Zoomo.screen !== 'results') return 'race ' + race + ': ' + Zoomo.screen;
+				document.getElementById ('btNext').click ();
+			}
+			return Zoomo.screen + ' ' + Zoomo.prog.cup + ' ' + document.querySelectorAll ('#cupRank tr').length;
+		});
+		ok (/^cup . 6$/.test (cup), 'the Grand Prix: four races and the cup (' + cup + ')');
 		ok (!errs.length, 'no error while racing ' + errs.join (' | '));
 		await ctx.close ();
 	}
@@ -89,7 +119,7 @@ const ok = (c, m) => { console.log ((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails+
 			await page.goto (url + '?lang=' + lang); await page.waitForTimeout (300);
 			await page.click ('#btHow'); await page.waitForTimeout (400);
 			await shot (page, tag + '-how');
-			ok (await page.locator ('#legendItems li').count () === 4, tag + ': the four items explained');
+			ok (await page.locator ('#legendItems li').count () === 6, tag + ': the six items explained');
 			ok (!errs.length, tag + ': no error ' + errs.join (' | '));
 			await ctx.close ();
 		}
