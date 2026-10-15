@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Code is Fun</title>
-<meta name="description" content="Games to learn to think like a programmer: Turtle Quest (programming a turtle in BASIC), Circuits (logic gates), and Drako! (a cartoon snake).">
+<meta name="description" content="Games to learn to think like a programmer: Turtle Quest (programming a turtle in BASIC), Circuits (logic gates), Drako! (a cartoon snake) and Briko Boom! (a cartoon brick breaker).">
 <meta name="theme-color" content="#FFFDF8">
 <link rel="icon" href="shared/turtle.svg" type="image/svg+xml">
 <link rel="stylesheet" href="shared/site.css">
@@ -75,6 +75,29 @@
 				<div class="row"><span class="progress" id="dkProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
 			</div>
 		</a>
+		<a class="panel game-card" href="brick/">
+			<svg class="thumb" viewBox="0 0 320 200" aria-hidden="true" font-family="system-ui,sans-serif">
+				<defs><linearGradient id="bksky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD6E8"/><stop offset="1" stop-color="#FFF4D6"/></linearGradient></defs>
+				<rect width="320" height="200" fill="url(#bksky)"/>
+				<g stroke="#2B2340" stroke-width="2.5" stroke-linejoin="round">
+					<rect x="40" y="22" width="38" height="18" rx="5" fill="#FF5A5F"/><rect x="81" y="22" width="38" height="18" rx="5" fill="#FF9F1C"/><rect x="122" y="22" width="38" height="18" rx="5" fill="#FFD23F"/><rect x="163" y="22" width="38" height="18" rx="5" fill="#3DD68C"/><rect x="204" y="22" width="38" height="18" rx="5" fill="#3FA7FF"/><rect x="245" y="22" width="38" height="18" rx="5" fill="#A66CFF"/>
+					<rect x="60" y="43" width="38" height="18" rx="5" fill="#8C9BFF"/><rect x="101" y="43" width="38" height="18" rx="5" fill="#B8C2CC"/><rect x="183" y="43" width="38" height="18" rx="5" fill="#4FD1C5"/><rect x="224" y="43" width="38" height="18" rx="5" fill="#FFC83D"/>
+					<rect x="142" y="43" width="38" height="18" rx="5" fill="#FF3D3D"/>
+				</g>
+				<path d="M150 50l8 -14 4 12 12 -10 -2 14 14 2 -12 8 10 10 -14 -2 -2 14 -8 -12 -10 10 0 -14 -14 -4 12 -6z" fill="#FFD23F" stroke="#2B2340" stroke-width="2.5" stroke-linejoin="round" transform="translate(4 6)"/>
+				<g transform="translate(262 84)" stroke="#2B2340" stroke-width="2.5"><circle cx="-14" cy="12" r="8" fill="#fff" opacity=".5" stroke="none"/><circle cx="-26" cy="22" r="6" fill="#fff" opacity=".3" stroke="none"/><circle r="10" fill="#FFFDF8"/><circle cx="3" cy="-3" r="1.8" fill="#2B2340" stroke="none"/><circle cx="-2" cy="2" r="1.8" fill="#2B2340" stroke="none"/></g>
+				<g stroke="#2B2340" stroke-width="3"><rect x="120" y="162" width="84" height="20" rx="10" fill="#2F7F93"/><path d="M133 162v20M191 162v20" stroke-width="2"/></g>
+				<g fill="#FF9F1C" stroke="#2B2340" stroke-width="3"><path d="M130 162h3v20h-3a10 10 0 0 1 0-20z"/><path d="M194 162h-3v20h3a10 10 0 0 0 0-20z"/></g>
+				<g stroke="#2B2340" stroke-width="1.5"><circle cx="152" cy="171" r="4.5" fill="#fff"/><circle cx="172" cy="171" r="4.5" fill="#fff"/></g><circle cx="153" cy="170" r="2.2" fill="#2B2340"/><circle cx="173" cy="170" r="2.2" fill="#2B2340"/>
+				<text x="98" y="134" text-anchor="middle" font-size="38" font-weight="900" fill="#2F7F93" stroke="#2B2340" stroke-width="7" paint-order="stroke" stroke-linejoin="round" transform="rotate(-4 98 120)">BRIKO</text>
+				<text x="236" y="138" text-anchor="middle" font-size="38" font-weight="900" fill="#FF9F1C" stroke="#2B2340" stroke-width="7" paint-order="stroke" stroke-linejoin="round" transform="rotate(-8 236 124)">BOOM!</text>
+			</svg>
+			<div class="body">
+				<h2>Briko Boom!</h2>
+				<p data-en="A cartoon brick breaker: 12 levels in Candy Land, the Ocean and Space — explosive bricks, multi-ball, laser, fireball. Mouse, keyboard, or a finger on a phone." data-fr="Un casse-briques façon dessin animé : 12 niveaux au Pays des Bonbons, dans l'Océan et dans l'Espace — briques explosives, multi-balles, laser, boule de feu. Souris, clavier, ou un doigt sur un téléphone.">A cartoon brick breaker: 12 levels.</p>
+				<div class="row"><span class="progress" id="bkProgress"></span><span class="btn primary" data-en="Play" data-fr="Jouer">Play</span></div>
+			</div>
+		</a>
 	</section>
 	<footer>
 		<p><span data-en="Turtle Quest and Circuits come from" data-fr="Turtle Quest et Circuits viennent de">Turtle Quest and Circuits come from</span> <a href="https://github.com/stephaneweg/onyx">Onyx</a><span data-en=", a homemade operating system for the Raspberry Pi." data-fr=", un système d'exploitation fait maison pour le Raspberry Pi.">, a homemade operating system for the Raspberry Pi.</span></p>
@@ -92,6 +115,8 @@
 		document.getElementById ('ciProgress').textContent = '★ ' + sum (ci) + ' / 60';
 		let dk = 0; try { const p = JSON.parse (localStorage.getItem ('codeisfun.snake.progress') || '{}'); dk = (p.stars || []).reduce ((x, y) => x + (y | 0), 0); } catch (e) { /* (no storage) */ }
 		document.getElementById ('dkProgress').textContent = '★ ' + dk + ' / 15';
+		let bk = 0; try { const p = JSON.parse (localStorage.getItem ('codeisfun.brick.progress') || '{}'); bk = (p.stars || []).reduce ((x, y) => x + (y | 0), 0); } catch (e) { /* (no storage) */ }
+		document.getElementById ('bkProgress').textContent = '★ ' + bk + ' / 36';
 	};
 	document.addEventListener ('DOMContentLoaded', show);
 }) ();

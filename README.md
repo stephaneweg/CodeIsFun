@@ -26,6 +26,13 @@ en **français** ou en **anglais** :
   Fait pour le téléphone : on glisse n'importe où sur l'écran (ou des flèches à l'écran, un réglage), en portrait ou
   en paysage ; flèches, WASD ou ZQSD et la manette sur un ordinateur. Tout est dessiné sur le canevas et chaque son
   est synthétisé (WebAudio) : aucune image, aucun fichier.
+- **[Briko Boom!](brick/)** : un casse-briques façon dessin animé (la famille d'Arkanoid et de LBreakout). 12 niveaux
+  dans trois mondes (le Pays des Bonbons, l'Océan, l'Espace), 3 étoiles chacun ; des briques solides, en métal,
+  explosives (en chaîne), en or, surprises, qui bougent ; 11 capsules (grande et petite raquette, multi-balles, colle,
+  laser, balle lente ou rapide, boule de feu, vie, bouclier, score x2) ; Pouf le nuage, des combos jusqu'à x4. La
+  raquette a une tête : elle suit la balle des yeux, sourit, s'inquiète, crie « AÏE ! ». La souris, les flèches, la
+  manette ; sur un téléphone le doigt glisse n'importe où et la raquette le suit sans être cachée. Des réglages : moins
+  d'animations, icônes des briques marquées (sans se fier aux couleurs), mode tranquille. Aucune image, aucun fichier.
 
 Turtle Quest et Circuits viennent d'[Onyx](https://github.com/stephaneweg/onyx), un système d'exploitation fait maison pour le
 Raspberry Pi : mêmes niveaux, mêmes règles, mêmes étoiles, les moteurs portés en JavaScript.
@@ -47,7 +54,8 @@ Raccourcis : **Ctrl+Entrée** lancer / vérifier, **F8** pas à pas, **F9** au d
 | `turtle/` | `basic.js` (l'interpréteur BASIC, FR/EN), `world.js` (le moteur : niveaux, monde, exécution enregistrée), `screen.js` (l'ordinateur du mode libre : écran, clavier, souris, manettes, son, MIDI, fichiers), `three3d.js` (la 3D d'Onyx : la scène, le rendu WebGL et le rendu logiciel), `app.js` (l'interface), `levels.js`, `onyx-examples.js` et `font.js` (générés) |
 | `circuits/` | `engine.js` (le moteur : plateau, routage des fils, évaluation, vérification), `lessons.js`, `app.js`, `levels.js` (généré) |
 | `snake/` | `drako.js` (Drako! : le jeu, le dessin, le son, les villages), `drako.css`, `index.html` |
-| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `shots.js` (captures) |
+| `brick/` | `briko.js` (Briko Boom! : la physique, les niveaux, le dessin, le son, les écrans), `briko.css`, `index.html` |
+| `tools/` | `sync-levels.py` (recopie les niveaux et les exemples BASIC d'Onyx), `gen-font.py` (la police CP437 d'Onyx), `test-turtle.js`, `test-free.js` (le mode libre, Arkanoid et Antigrav compris), `test-circuits.js`, `test-drako.js` (Drako! dans Chromium : l'IA sauve le village 1, les écrans, captures), `test-briko.js` (Briko Boom! : le pilote automatique finit les 12 niveaux, le doigt et la souris, les écrans, captures), `shots.js` (captures) |
 | `docs/DESIGN.md` | la direction de l'interface (mises en page ordinateur / tablette / téléphone) |
 
 ## Les niveaux
@@ -61,6 +69,7 @@ node tools/test-turtle.js                 # chaque solution gagne avec 3 étoile
 node tools/test-free.js                   # le mode libre : les exemples d'Onyx (Arkanoid et Antigrav joués un peu), QBasic
 node tools/test-circuits.js
 node tools/test-drako.js [dossier]       # Drako! (Playwright) : téléphone portrait et paysage, ordinateur
+node tools/test-briko.js [dossier]       # Briko Boom! (Playwright) : les 12 niveaux finis par le pilote automatique, les écrans
 ```
 
 Un recueil `.turtle` ou `.circuits` peut aussi être ouvert dans le jeu (le bouton dossier de la liste des niveaux).
