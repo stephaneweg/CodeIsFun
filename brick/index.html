@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Briko Boom! · Code is Fun</title>
+<meta name="description" content="BRIKO BOOM! A cartoon brick breaker: 12 levels in Candy Land, the Ocean and Space, explosive bricks, multi-ball, lasers, a fireball. Mouse, keyboard or a finger on a phone.">
+<meta name="theme-color" content="#FFD6E8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="../shared/briko.svg" type="image/svg+xml">
+<link rel="stylesheet" href="briko.css">
+</head>
+<body>
+<div id="app">
+	<canvas id="cv" aria-label="Briko Boom!"></canvas>
+	<div id="safe" aria-hidden="true"></div>
+	<button class="kbtn round pause" id="btPause" type="button" data-kl="paused"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+
+	<!-- the title -->
+	<section id="scrTitle" class="screen on">
+		<h1 class="logo"><span class="w1">BRIKO</span><span class="w2">BOOM!</span></h1>
+		<p class="tag" data-k="subtitle">Break them all!</p>
+		<div class="card menu">
+			<button class="kbtn big pulse" id="btPlay" type="button" data-k="play">Play</button>
+			<button class="kbtn orange" id="btLevels" type="button" data-k="levels">Levels</button>
+			<div class="row">
+				<button class="kbtn light" id="btHow" type="button" data-k="howBtn">How to play</button>
+				<button class="kbtn light round" id="btSettings" type="button" data-kl="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5.1 1.6 1.3-2 3.4-1.9-.7a7.8 7.8 0 0 1-2 1.2L15.8 21h-4l-.3-2a7.8 7.8 0 0 1-2-1.2l-1.9.7-2-3.4 1.6-1.3a7.6 7.6 0 0 1 0-2.3L5.6 10.3l2-3.4 1.9.7a7.8 7.8 0 0 1 2-1.2L11.8 3h4l.3 2.4a7.8 7.8 0 0 1 2 1.2l1.9-.7 2 3.4-1.6 1.3a7.6 7.6 0 0 1 0 2.3z"/></svg></button>
+			</div>
+			<p class="best" id="bestTitle"></p>
+		</div>
+		<a class="back-site" href="../" data-k="backSite">Back to Code is Fun</a>
+	</section>
+
+	<!-- the levels -->
+	<section id="scrLevels" class="screen dim">
+		<div class="card sheet wide">
+			<h2 class="ribbon" data-k="levels">Levels</h2>
+			<div id="levelGrid" class="worlds"></div>
+			<button class="kbtn light" type="button" data-go="title" data-k="back">Back</button>
+		</div>
+	</section>
+
+	<!-- how to play -->
+	<section id="scrHow" class="screen dim">
+		<div class="card sheet wide">
+			<h2 class="ribbon" data-k="howBtn">How to play</h2>
+			<p id="howText" class="how"></p>
+			<h3 data-k="bricksT">Bricks</h3>
+			<ul class="legend" id="legendBricks"></ul>
+			<h3 data-k="powersT">Capsules</h3>
+			<ul class="legend" id="legendPowers"></ul>
+			<p class="small" data-k="starsRule">★ clear the level · ★★ without losing a ball · ★★★ and quickly</p>
+			<button class="kbtn" type="button" data-go="title" data-k="ok">OK!</button>
+		</div>
+	</section>
+
+	<!-- pause -->
+	<section id="scrPause" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon" data-k="paused">Paused</h2>
+			<p class="note" id="pauseNote"></p>
+			<button class="kbtn big" id="btResume" type="button" data-k="resume">Resume</button>
+			<div class="row">
+				<button class="kbtn orange" id="btRestart" type="button" data-k="restart">Restart</button>
+				<button class="kbtn light round" id="btSettings2" type="button" data-kl="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5.1 1.6 1.3-2 3.4-1.9-.7a7.8 7.8 0 0 1-2 1.2L15.8 21h-4l-.3-2a7.8 7.8 0 0 1-2-1.2l-1.9.7-2-3.4 1.6-1.3a7.6 7.6 0 0 1 0-2.3L5.6 10.3l2-3.4 1.9.7a7.8 7.8 0 0 1 2-1.2L11.8 3h4l.3 2.4a7.8 7.8 0 0 1 2 1.2l1.9-.7 2 3.4-1.6 1.3a7.6 7.6 0 0 1 0 2.3z"/></svg></button>
+			</div>
+			<button class="kbtn light" type="button" data-go="menu" data-k="menu">Menu</button>
+		</div>
+	</section>
+
+	<!-- a level cleared -->
+	<section id="scrClear" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon" id="clearTitle" data-k="levelDone">Level clear!</h2>
+			<p class="lvname" id="clearName"></p>
+			<div class="stars" id="clearStars"><i class="star"></i><i class="star mid"></i><i class="star"></i></div>
+			<table class="tally" id="clearTally"></table>
+			<div class="big-score" id="clearScore">0</div>
+			<div class="record" id="clearRecord" data-k="newRecord">New record!</div>
+			<button class="kbtn big" id="btNext" type="button" data-k="next">Next</button>
+			<div class="row">
+				<button class="kbtn orange" id="btRetry2" type="button" data-k="retry">Retry</button>
+				<button class="kbtn light" type="button" data-go="menu" data-k="menu">Menu</button>
+			</div>
+		</div>
+	</section>
+
+	<!-- game over -->
+	<section id="scrOver" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon red" data-k="gameOver">Game over</h2>
+			<p class="lvname" id="overName"></p>
+			<div class="big-score" id="overScore">0</div>
+			<div class="record" id="overRecord" data-k="newRecord">New record!</div>
+			<p class="note" id="overNote"></p>
+			<button class="kbtn big" id="btRetry" type="button" data-k="retry">Retry</button>
+			<button class="kbtn light" type="button" data-go="menu" data-k="menu">Menu</button>
+		</div>
+	</section>
+
+	<!-- settings -->
+	<section id="scrSettings" class="screen dim">
+		<div class="card sheet">
+			<h2 class="ribbon" data-k="settings">Settings</h2>
+			<label class="toggle"><span data-k="sound">Sound</span><input type="checkbox" id="setSound"><i></i></label>
+			<label class="toggle"><span data-k="music">Music</span><input type="checkbox" id="setMusic"><i></i></label>
+			<label class="toggle"><span data-k="reduced">Less motion</span><input type="checkbox" id="setReduced"><i></i></label>
+			<label class="toggle"><span data-k="bold">Bold brick icons</span><input type="checkbox" id="setBold"><i></i></label>
+			<label class="toggle"><span data-k="puffs">Puff the cloud</span><input type="checkbox" id="setPuffs"><i></i></label>
+			<label class="toggle"><span data-k="relaxed">Relaxed (5 lives, slower)</span><input type="checkbox" id="setRelaxed"><i></i></label>
+			<div class="toggle"><span data-k="language">Language</span><span class="seg"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></span></div>
+			<button class="kbtn" id="btSetBack" type="button" data-k="ok">OK!</button>
+		</div>
+	</section>
+	<div id="live" class="sr-only" role="status" aria-live="polite"></div>
+</div>
+<script src="../shared/site.js"></script>
+<script src="briko.js"></script>
+</body>
+</html>
