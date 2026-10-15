@@ -34,13 +34,16 @@ en **français** ou en **anglais** :
   manette ; sur un téléphone le doigt glisse n'importe où et la raquette le suit sans être cachée. Des réglages : moins
   d'animations, icônes des briques marquées (sans se fier aux couleurs), mode tranquille. Aucune image, aucun fichier.
 
-- **[Zoomo!](race/)** : une course antigravité façon dessin animé (la famille de Wipeout ; Antigrav, l'exemple du mode
-  libre, en plein soleil). Six pilotes dans leurs vaisseaux — Tito la tortue, Mimi le chat, Lulu le lapin, Pépin le cochon,
+- **[Zoomo!](race/)** : une course antigravité façon dessin animé, entre Mario Kart et Antigrav (l'exemple du mode
+  libre) : dérapages et mini-turbos (étincelles bleues, orange, roses), pièces (jusqu'à 10, chacune rend un peu plus
+  rapide), boîtes ? et leur roulette (fusée, triple fusée, chewing-gum, bulle, turbo, étoile), tremplins au-dessus du
+  vide avec figures, bords sans murs (Pouf le nuage repêche ceux qui tombent), départ turbo, trois classes de vitesse et
+  un Grand Prix avec sa coupe. Six pilotes dans leurs vaisseaux — Tito la tortue, Mimi le chat, Lulu le lapin, Pépin le cochon,
   Bruno l'ours et Drako le dragon — quatre circuits faits à partir d'un nombre (une boucle qui monte, plonge et penche
-  dans ses virages, sur ses piliers, avec des tunnels, des arcs-en-ciel, des flèches d'élan et des boîtes ?), les
+  dans ses virages, sur ses piliers, avec des tunnels, des arcs-en-ciel, des flèches d'élan, des tremplins), les
   Collines Bonbons, la Plage Soleil, le Canyon de Lave et la Boucle des Étoiles ; cinq rivaux qui se défendent (fusées,
   chewing-gum, bulles, turbos), trois tours, 3 étoiles par circuit. Le vaisseau avance tout seul : flèches ou manette
-  pour tourner, et sur un téléphone on garde le doigt sur un côté de l'écran. Du pseudo-3D dessiné sur le canevas, des
+  pour tourner, Maj pour déraper ; sur un téléphone on garde le doigt sur un côté de l'écran (longtemps : un dérapage). Du pseudo-3D dessiné sur le canevas, des
   dessins animés pour les vaisseaux et le décor (`race/art.js`), chaque son synthétisé : aucune image, aucun fichier.
   Sa petite sœur en BASIC est dans le mode libre de Turtle Quest (`turtle/bas/zoomo.bas`, avec la 3D d'Onyx).
 

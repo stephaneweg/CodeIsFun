@@ -67,9 +67,13 @@ for (const ex of window.ONYX_EXAMPLES)
 	}
 	if (ex.name === 'zoomo.bas')
 	{
-		// the title (a pilot and a circuit changed), a race started, steered, an item used, paused, Esc twice (the title, quit)
-		const r = run (ex.text, [[10, '\x00M'], [12, '\x00P'], [14, '\x00M'], [16, '\x00P'], [20, '\r'], [200, 'hold:RIGHT'], [260, 'up:RIGHT'], [270, ' '], [300, 'P'], [310, 'P'], [400, '\x1b'], [420, '\x1b']], 1000);
-		check (ex.name, !r.err && r.pc.screen.mode === 12 && r.waits < 1000, r.err ? 'line ' + r.err.line + ': ' + r.err.message : 'waits ' + r.waits);
+		// the title (the speed, the circuit and the pilot changed), a race: a rocket start, a drift, an item, a pause; Esc (the
+		// title); then a Grand Prix started and left; Esc (quit)
+		const r = run (ex.text, [[10, '\x00H'], [12, '\x00M'], [14, '\x00H'], [16, '\x00M'], [18, '\x00H'], [20, '\x00M'], [22, '\x00P'], [24, '\x00P'], [26, '\x00P'], [28, '\r'],
+			[60, ' '], [200, 'hold:RIGHT'], [205, 'hold:SHIFT'], [300, 'up:SHIFT'], [310, 'up:RIGHT'], [320, ' '], [330, 'P'], [340, 'P'], [400, '\x1b'],
+			[420, '\x00H'], [422, '\x00H'], [424, '\x00H'], [426, '\x00H'], [428, '\x00M'], [430, '\x00P'], [432, '\x00P'], [434, '\x00P'], [436, '\x00P'], [438, '\r'],
+			[600, '\x1b'], [620, '\x1b']], 1000);
+		check (ex.name, !r.err && r.pc.screen.mode === 12 && r.waits > 610 && r.waits < 1000, r.err ? 'line ' + r.err.line + ': ' + r.err.message : 'waits ' + r.waits);
 		continue;
 	}
 	if (ex.name === 'arkanoid.bas')

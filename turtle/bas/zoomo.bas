@@ -4,13 +4,16 @@
 ' pilots in their hover pods -- a turtle, a cat, a bunny, a pig, a bear and a dragon.
 '
 '   Left / Right ...... steer             Down ........... brake (the craft goes by itself)
-'   Space ............. use what a ? box gave you: a rocket, gum, a bubble, a turbo
+'   Shift, C or V ..... drift (sparks: blue, orange, pink -- let go: a turbo); just after a ramp: a trick
+'   Space ............. use what a ? box gave you; just before GO: a rocket start
 '   P ................. pause             Esc ............ back to the title (Esc there: quit)
-'   A gamepad: the d-pad or the stick, A use, B brake, Start pause.
-'   A finger or the mouse: hold the left or the right half of the screen.
+'   A gamepad: the d-pad or the stick, A use, L / R drift, B brake, Start pause.
+'   A finger or the mouse: hold the left or the right half of the screen (held a while: a drift).
 '
-' Three circuits (Candy Hills, Sunny Beach, Star Loop), three laps, five rivals who fight back. The blue
-' arrows on the track throw you forward. Finish first!
+' Mario Kart meets Antigrav: three circuits (Candy Hills, Sunny Beach, Star Loop), three laps, five rivals
+' who fight back; drifts and mini-turbos, coins (ten at most, each a little faster), ? boxes and their
+' roulette (a rocket, three rockets, gum, a bubble, a turbo, the star), jumps over gaps, edges without walls
+' (fall off: Pouf the cloud fishes you back), three speed classes, a Grand Prix. Finish first!
 '
 ' Shows: the pictures drawn with CIRCLE ... F, LINE, PAINT and DRAWTEXT, then taken with GRAB3D (magenta =
 ' see-through) and shown as billboards facing the camera (the craft, the trees, the clouds, the sun);
@@ -21,12 +24,13 @@
 ' MIT License -- Copyright (c) 2026 Stéphane Wegener and the Onyx contributors.
 
 CONST PI = 3.14159265
-CONST NSEG = 400, HW = 6, WALLH = 1.1, NSHIP = 6, NPROJ = 24, MAXDECO = 160, NCIRC = 3, LAPS = 3
+CONST NSEG = 400, HW = 6, WALLH = 1.1, NSHIP = 6, NPROJ = 24, MAXDECO = 160, NCIRC = 3, LAPS = 3, NITEM = 6
 
 ' ---- the circuit -------------------------------------------------------------------------------
 DIM SHARED px(NSEG), py(NSEG), pz(NSEG), tx(NSEG), ty(NSEG), tz(NSEG)
 DIM SHARED rx(NSEG), ry(NSEG), rz(NSEG), ux(NSEG), uy(NSEG), uz(NSEG), cv(NSEG)
-DIM SHARED kind(NSEG), lane(NSEG)                ' 1 tunnel, 2 speed pad, 4 ? boxes, 8 a rainbow; the pad's lane
+DIM SHARED kind(NSEG), lane(NSEG)                ' 1 tunnel, 2 speed pad, 4 ? boxes, 8 a rainbow, 16 a ramp, 32 coins,
+                                                 ' 64 no walls, 128 a gap; the lane of a pad, of coins
 DIM SHARED dxs(4 * NSEG + 4), dys(4 * NSEG + 4), dzs(4 * NSEG + 4), dl(4 * NSEG + 4)
 DIM SHARED dkx(MAXDECO), dky(MAXDECO), dkz(MAXDECO), dkk(MAXDECO), dks(MAXDECO), dkseg(MAXDECO), ndeco
 DIM SHARED mmx(50), mmy(50)
@@ -42,20 +46,24 @@ DIM SHARED sd(NSHIP), lx(NSHIP), v(NSHIP), vl(NSHIP), steer(NSHIP), thrust(NSHIP
 DIM SHARED item(NSHIP), shield(NSHIP), turbo(NSHIP), spin(NSHIP), stuck(NSHIP), skill(NSHIP), aioff(NSHIP)
 DIM SHARED arrived(NSHIP), fintime(NSHIP), lapst(NSHIP), bestlap(NSHIP), place(NSHIP), firewait(NSHIP), pilot(NSHIP), order(NSHIP)
 DIM SHARED powT(NSHIP), pow$(NSHIP), bonkT(NSHIP)
+DIM SHARED coins(NSHIP), drift(NSHIP), driftT(NSHIP), driftIn(NSHIP), hop(NSHIP), alt(NSHIP), vh(NSHIP), air(NSHIP)
+DIM SHARED trick(NSHIP), trickT(NSHIP), fall(NSHIP), rescue(NSHIP), star(NSHIP), ammo(NSHIP), roll(NSHIP), rollIt(NSHIP), stall(NSHIP)
 DIM SHARED pname$(5), pkind(5), pc1(5), pc2(5), pskin(5)
 
 ' ---- the shots, the gum, the ? boxes -------------------------------------------------------------
 DIM SHARED pk(NPROJ), ps(NPROJ), pl(NPROJ), pv(NPROJ), pown(NPROJ), ptgt(NPROJ), plife(NPROJ)
-DIM SHARED boxwait(NSEG * 3)
+DIM SHARED boxwait(NSEG * 3), coinwait(NSEG * 5)
 
 ' ---- the game ----------------------------------------------------------------------------------
 DIM SHARED tex.track, tex.boost, tex.box, tex.sun, tex.moon, tex.cloud, tex.shadow, tex.check, tex.rocket, tex.gum, tex.pow, tex.ground
+DIM SHARED tex.coin, tex.pouf, tex.spark, faceSp(12)        ' (the faces: drawn once, then PUT)
 DIM SHARED texShip(5), texDeco(6), dsize(6), dhigh(6)
 DIM SHARED vmax, state, racet, cdown, paused, demo, vdist, mypilot, menuSel
 DIM SHARED cex, cey, cez, ctx, cty, ctz, crx, cry, crz, cux, cuy, cuz
 DIM SHARED t, dt, msg$, msgT, best(NCIRC), lastBeep, padprev, camL, camH
 DIM SHARED sndOn, musOn, engF, sfxEnd(16), mstep, mnext, mbar, mbass, mleadOn
-DIM SHARED lang$, trE$(60), trF$(60), ntr, fontch$, glyph$(48), itemName$(4)
+DIM SHARED lang$, trE$(90), trF$(90), ntr, fontch$, glyph$(48), itemName$(NITEM)
+DIM SHARED klass, classV(2), className$(2), gpOn, gpRace, gpPts(5), points(6), quitRace, startPress, mouseT
 DIM SHARED INK, MAGENTA
 
 RANDOMIZE TIMER
@@ -71,6 +79,12 @@ FOR c = 1 TO NCIRC
   FOR k = 1 TO 13: READ a: tc(c, k) = Hex2Rgb(a): NEXT
 NEXT
 itemName$(1) = T$("ROCKET"): itemName$(2) = T$("GUM"): itemName$(3) = T$("BUBBLE"): itemName$(4) = T$("TURBO")
+itemName$(5) = T$("STAR"): itemName$(6) = T$("3 ROCKETS")
+' the speed classes (Antigrav's), the Grand Prix's points
+classV(0) = 76: classV(1) = 92: classV(2) = 110: klass = 1
+className$(0) = "EASY": className$(1) = "FAST": className$(2) = "ROCKET"
+RESTORE Points
+FOR i = 1 TO 6: READ points(i): NEXT
 INK = RGB(43, 35, 64): MAGENTA = RGB(255, 0, 255)    ' (magenta: see-through in a GRAB3D picture)
 
 SCREEN 12
@@ -86,7 +100,18 @@ circ = 1: mypilot = 0
 BuildCircuit circ
 DO
   TitleScreen
-  Race
+  IF gpOn THEN
+    ' the Grand Prix: the three circuits in a row, the points added up, a cup
+    FOR i = 0 TO 5: gpPts(i) = 0: NEXT
+    FOR gpRace = 1 TO NCIRC
+      circ = gpRace: BuildCircuit circ
+      Race
+      IF quitRace THEN EXIT FOR
+    NEXT
+    IF NOT quitRace THEN CupScreen
+  ELSE
+    Race
+  END IF
 LOOP
 
 NoSound:
@@ -95,6 +120,9 @@ NoSound:
 NoMusic:
   musOn = 0
   RESUME NEXT
+
+Points:      ' the Grand Prix: the points of the 1st ... 6th
+DATA 10, 8, 6, 4, 2, 1
 
 Pilots:      ' name, kind (0 turtle 1 cat 2 bunny 3 pig 4 bear 5 dragon), craft colour, its stripe, the head
 DATA "TITO", 0, &H2FB24A, &HFFD23F, &H8CD867
@@ -120,8 +148,12 @@ DATA "PILOT", "PILOTE", "CIRCUIT", "CIRCUIT", "START", "PARTEZ", "QUIT", "QUITTE
 DATA "PAUSED", "PAUSE", "YOU WIN!", "GAGNE !", "PODIUM!", "PODIUM !", "BEST LAP", "MEILLEUR TOUR"
 DATA "CANDY HILLS", "COLLINES BONBONS", "SUNNY BEACH", "PLAGE SOLEIL", "STAR LOOP", "BOUCLE ETOILES"
 DATA "Up/Down choose  Left/Right change  Enter play  Esc quit", "Haut/Bas choisir  Gauche/Droite changer  Entree jouer  Esc quitter"
-DATA "Arrows steer  Down brake  Space use  P pause", "Fleches tourner  Bas freiner  Espace utiliser  P pause"
 DATA "Enter: back to the title", "Entree : retour au titre", "P: resume   Esc: title", "P : reprendre   Esc : titre"
+DATA "STAR", "ETOILE", "3 ROCKETS", "3 FUSEES", "STAR POWER!", "SUPER ETOILE !", "SUPER!", "GENIAL !", "OOPS!", "OUPS !"
+DATA "ROCKET START!", "DEPART TURBO !", "TOO EARLY!", "TROP TOT !", "MODE", "MODE", "ONE RACE", "UNE COURSE"
+DATA "SPEED", "VITESSE", "EASY", "TRANQUILLE", "FAST", "RAPIDE", "ALL THREE", "LES TROIS"
+DATA "Space just before GO: a rocket start!", "Espace juste avant le depart : depart turbo !"
+DATA "Arrows steer  Shift/C drift  Down brake  Space use  P pause", "Fleches tourner  Maj/C deraper  Bas freiner  Espace utiliser  P pause"
 DATA "", ""
 
 BigFont:     ' 5 x 7 letters: 35 dots a glyph (# lit), in the order of FONTCH$
@@ -346,6 +378,26 @@ SUB MakeTextures
   Disc 32, 24, 18, RGB(255, 210, 50), .7
   BigText T$("POW!"), 32, 17, 2, RGB(255, 90, 60)
   tex.pow = GRAB3D(0, 0, 64, 48)
+  ' a coin (a Z on it)
+  LINE (0, 0)-(31, 31), MAGENTA, BF
+  Disc 16, 16, 13, RGB(255, 205, 50), 1: CIRCLE (16, 16), 9, RGB(230, 160, 20)
+  LINE (11, 10)-(21, 10), RGB(200, 130, 10): LINE (21, 10)-(11, 22), RGB(200, 130, 10): LINE (11, 22)-(21, 22), RGB(200, 130, 10)
+  CIRCLE (11, 10), 2, RGB(255, 250, 200), , , , F
+  tex.coin = GRAB3D(0, 0, 32, 32)
+  ' Pouf the cloud (Briko Boom!'s), with a fishing rod
+  LINE (0, 0)-(63, 39), MAGENTA, BF
+  LINE (44, 22)-(62, 2), INK: LINE (45, 22)-(63, 2), RGB(150, 100, 60)
+  Disc 16, 24, 10, RGB(255, 255, 255), 1: Disc 30, 16, 13, RGB(255, 255, 255), 1: Disc 44, 24, 10, RGB(255, 255, 255), 1
+  LINE (8, 26)-(52, 33), RGB(255, 255, 255), BF: LINE (8, 34)-(52, 34), INK
+  CIRCLE (16, 24), 10, RGB(255, 255, 255), , , , F: CIRCLE (30, 16), 13, RGB(255, 255, 255), , , , F: CIRCLE (44, 24), 10, RGB(255, 255, 255), , , , F
+  CIRCLE (25, 19), 2, INK, , , , F: CIRCLE (35, 19), 2, INK, , , , F
+  CIRCLE (30, 23), 4, INK, 3.4, 6: CIRCLE (20, 25), 3, RGB(255, 170, 190), , , .6, F: CIRCLE (40, 25), 3, RGB(255, 170, 190), , , .6, F
+  tex.pouf = GRAB3D(0, 0, 64, 40)
+  ' a spark (white: tinted, added)
+  LINE (0, 0)-(15, 15), MAGENTA, BF
+  LINE (7, 0)-(8, 15), RGB(255, 255, 255), BF: LINE (0, 7)-(15, 8), RGB(255, 255, 255), BF
+  CIRCLE (7.5, 7.5), 3, RGB(255, 255, 255), , , , F
+  tex.spark = GRAB3D(0, 0, 16, 16)
   ' the grass (two greens: they show the speed)
   LINE (0, 0)-(31, 31), RGB(255, 255, 255), BF
   LINE (0, 0)-(15, 15), RGB(225, 235, 225), BF: LINE (16, 16)-(31, 31), RGB(225, 235, 225), BF
@@ -398,6 +450,14 @@ SUB MakeTextures
   FOR p = 0 TO 5
     ShipPic p, 0, 0
     texShip(p) = GRAB3D(0, 0, 64, 48)
+  NEXT
+  ' the faces for the HUD and the results (happy, ouch), on the panels' cream: put again and again, quick
+  FOR p = 0 TO 5
+    FOR md = 0 TO 1
+      LINE (0, 0)-(25, 27), RGB(255, 253, 248), BF
+      Head p, 13, 16, 9, -1, md
+      GET (0, 0)-(25, 27), faceSp(p * 2 + md)
+    NEXT
   NEXT
   CLS
 END SUB
@@ -478,19 +538,54 @@ SUB BuildCircuit (c)
   FOR i = 0 TO NSEG: kind(i) = 0: lane(i) = 0: NEXT
   a = 120 + INT(RND * 120): b = a + 20 + INT(RND * 14)
   FOR i = a TO b: kind(i MOD NSEG) = kind(i MOD NSEG) OR 1: NEXT
+  ' jumps: a ramp (16) then a gap (128), on the straights
+  nr = 0
+  FOR tries = 1 TO 400
+    IF nr >= 1 + c \ 2 THEN EXIT FOR
+    i = 40 + INT(RND * (NSEG - 60)): ok = -1
+    FOR k = -2 TO 9
+      j = (i + k + NSEG) MOD NSEG
+      IF ABS(cv(j)) > .012 OR (kind(j) AND 145) THEN ok = 0
+    NEXT
+    FOR k = -40 TO 40
+      IF kind((i + k + NSEG) MOD NSEG) AND 16 THEN ok = 0
+    NEXT
+    IF ok THEN
+      kind(i) = kind(i) OR 16: kind(i + 1) = kind(i + 1) OR 16
+      FOR k = 3 TO 6: kind((i + k) MOD NSEG) = kind((i + k) MOD NSEG) OR 128: NEXT
+      nr = nr + 1
+    END IF
+  NEXT
+  ' an edge without walls (64)
+  FOR tries = 1 TO 40
+    a = 80 + INT(RND * (NSEG - 140)): b = a + 24: ok = -1
+    FOR i = a - 4 TO b + 4
+      IF kind(i MOD NSEG) AND 145 THEN ok = 0
+    NEXT
+    IF ok THEN
+      FOR i = a TO b: kind(i) = kind(i) OR 64: NEXT
+      EXIT FOR
+    END IF
+  NEXT
   FOR i = 26 TO NSEG - 12 STEP 30 + INT(RND * 6)
-    IF (kind(i) AND 1) = 0 THEN kind(i) = kind(i) OR 8
+    IF (kind(i) AND 145) = 0 THEN kind(i) = kind(i) OR 8
   NEXT
   kind(0) = kind(0) OR 8
   i = 18: nb = 0
   DO WHILE i < NSEG - 10
-    IF ABS(cv(i)) < .02 AND (kind(i) AND 9) = 0 AND (kind(i + 1) AND 9) = 0 THEN
+    IF ABS(cv(i)) < .02 AND (kind(i) AND 153) = 0 AND (kind(i + 1) AND 153) = 0 THEN
       IF nb < 2 OR RND < .45 THEN kk = 4: nb = nb + 1 ELSE kk = 2
       kind(i) = kind(i) OR kk: lane(i) = INT(RND * 3) - 1
       i = i + 16 + INT(RND * 16)
     ELSE
       i = i + 3
     END IF
+  LOOP
+  ' rows of coins (32), in a lane
+  i = 12
+  DO WHILE i < NSEG - 6
+    IF (kind(i) AND 150) = 0 AND (kind(i + 1) AND 150) = 0 THEN kind(i) = kind(i) OR 32: lane(i) = INT(RND * 3) - 1
+    i = i + 9 + INT(RND * 14)
   LOOP
   FOR i = 0 TO NSEG * 3: boxwait(i) = 0: NEXT
   ' the scenery: on the ground beside the track, never on it (the planets float)
@@ -604,7 +699,6 @@ SUB DrawWorld (camS)
       Sprite cex + 640 * COS(a), cey + 60 + (k MOD 3) * 50, cez + 640 * SIN(a), 90 + (k MOD 2) * 40, 45 + (k MOD 2) * 20, 0
     NEXT
   ELSE
-    ' the stars
     TEXTURE3D 0: BLEND3D 0
     FOR k = 0 TO 70
       a = k * 2.399: e = 60 + ((k * 37) MOD 300)
@@ -623,20 +717,22 @@ SUB DrawWorld (camS)
   END IF
 
   c0 = INT(camS / seglen) - 2
-  ' the floor (tinted by the circuit's colours, a band every three segments)
+  ' the floor (tinted by the circuit's colours, a band every three segments; nothing over a gap)
   TEXTURE3D tex.track, 1, 0
   FOR k = 0 TO vdist
     i = (c0 + k + NSEG * 4) MOD NSEG: j = i + 1
-    IF (i \ 3) MOD 2 THEN c = tc(circ, 5) ELSE c = tc(circ, 6)
-    c = Fog(c, k)
-    t0 = (i MOD 8) * .5: t1 = t0 + .5
-    COLOR3D c
-    Node i, -HW, 0: x0 = wx: y0 = wy: z0 = wz
-    Node i, HW, 0: x1 = wx: y1 = wy: z1 = wz
-    Node j, HW, 0: x2 = wx: y2 = wy: z2 = wz
-    Node j, -HW, 0: x3 = wx: y3 = wy: z3 = wz
-    VERTEX3D x0, y0, z0, 0, t0: VERTEX3D x1, y1, z1, 1, t0: VERTEX3D x2, y2, z2, 1, t1
-    VERTEX3D x0, y0, z0, 0, t0: VERTEX3D x2, y2, z2, 1, t1: VERTEX3D x3, y3, z3, 0, t1
+    IF (kind(i) AND 128) = 0 THEN
+      IF (i \ 3) MOD 2 THEN c = tc(circ, 5) ELSE c = tc(circ, 6)
+      c = Fog(c, k)
+      t0 = (i MOD 8) * .5: t1 = t0 + .5
+      COLOR3D c
+      Node i, -HW, 0: x0 = wx: y0 = wy: z0 = wz
+      Node i, HW, 0: x1 = wx: y1 = wy: z1 = wz
+      Node j, HW, 0: x2 = wx: y2 = wy: z2 = wz
+      Node j, -HW, 0: x3 = wx: y3 = wy: z3 = wz
+      VERTEX3D x0, y0, z0, 0, t0: VERTEX3D x1, y1, z1, 1, t0: VERTEX3D x2, y2, z2, 1, t1
+      VERTEX3D x0, y0, z0, 0, t0: VERTEX3D x2, y2, z2, 1, t1: VERTEX3D x3, y3, z3, 0, t1
+    END IF
   NEXT
   ' the pads
   TEXTURE3D tex.boost, 1
@@ -652,36 +748,47 @@ SUB DrawWorld (camS)
       VERTEX3D x0, y0, z0, 0, 1: VERTEX3D x2, y2, z2, 1, 0: VERTEX3D x3, y3, z3, 0, 0
     END IF
   NEXT
-  ' the kerbs, the candy-striped walls, their ink, the slab's sides, the start line
+  ' the kerbs, the candy-striped walls, their ink, the slab's sides, the ramps, the start line
   TEXTURE3D 0
   FOR k = 0 TO vdist
     i = (c0 + k + NSEG * 4) MOD NSEG
-    IF (i \ 2) MOD 2 THEN kc = Fog(tc(circ, 7), k) ELSE kc = Fog(RGB(255, 255, 255), k)
-    Band i, -HW, .02, -HW + .9, .02, kc
-    Band i, HW - .9, .02, HW, .02, kc
-    IF i MOD 2 THEN wc = Fog(tc(circ, 8), k) ELSE wc = Fog(tc(circ, 9), k)
-    Band i, -HW, 0, -HW, WALLH, wc
-    Band i, HW, 0, HW, WALLH, wc
-    ic = Fog(INK, k)
-    Band i, -HW - .45, WALLH, -HW, WALLH + .12, ic
-    Band i, HW, WALLH + .12, HW + .45, WALLH, ic
-    sc = Fog(tc(circ, 10), k)
-    Band i, -HW - .45, -1, -HW - .45, WALLH, sc
-    Band i, HW + .45, -1, HW + .45, WALLH, sc
-    Band i, -HW - .45, -1.05, HW + .45, -1.05, Fog(tc(circ, 10), k)
-    IF i = 0 THEN
-      FOR q = 0 TO 7
-        IF q MOD 2 THEN c = RGB(255, 255, 255) ELSE c = INK
-        Band 0, -HW + q * 1.5, .03, -HW + q * 1.5 + 1.5, .03, c
-      NEXT
+    IF (kind(i) AND 128) = 0 THEN
+      op = kind(i) AND 64
+      IF (i \ 2) MOD 2 THEN kc = Fog(tc(circ, 7), k) ELSE kc = Fog(RGB(255, 255, 255), k)
+      IF op AND (i \ 2) MOD 2 = 0 THEN kc = Fog(RGB(255, 225, 77), k)
+      Band i, -HW, .02, -HW + .9, .02, kc
+      Band i, HW - .9, .02, HW, .02, kc
+      sc = Fog(tc(circ, 10), k): ic = Fog(INK, k)
+      IF op THEN
+        ' an open edge: no wall, the slab's side, the ink along the edge
+        Band i, -HW, 0, -HW, -1, sc: Band i, HW, 0, HW, -1, sc
+        Band i, -HW - .1, .03, -HW + .1, .03, ic: Band i, HW - .1, .03, HW + .1, .03, ic
+      ELSE
+        IF i MOD 2 THEN wc = Fog(tc(circ, 8), k) ELSE wc = Fog(tc(circ, 9), k)
+        Band i, -HW, 0, -HW, WALLH, wc
+        Band i, HW, 0, HW, WALLH, wc
+        Band i, -HW - .45, WALLH, -HW, WALLH + .12, ic
+        Band i, HW, WALLH + .12, HW + .45, WALLH, ic
+        Band i, -HW - .45, -1, -HW - .45, WALLH, sc
+        Band i, HW + .45, -1, HW + .45, WALLH, sc
+      END IF
+      Band i, -HW - .45, -1.05, HW + .45, -1.05, sc
+      IF kind(i) AND 16 THEN Ramp i, k
+      IF i = 0 THEN
+        FOR q = 0 TO 7
+          IF q MOD 2 THEN c = RGB(255, 255, 255) ELSE c = INK
+          Band 0, -HW + q * 1.5, .03, -HW + q * 1.5 + 1.5, .03, c
+        NEXT
+      END IF
     END IF
   NEXT
-  ' the pillars (lit), the tunnels' vaults, the rainbows
+  ' the pillars (lit; one at each end of a gap), the tunnels' vaults, the rainbows
   LIGHT3D .4, 1, .3, 45: CULL3D 1
   IF night(circ) = 0 THEN
     FOR k = 0 TO vdist
       i = (c0 + k + NSEG * 4) MOD NSEG
-      IF i MOD 8 = 4 AND (kind(i) AND 1) = 0 THEN
+      edge = ((kind((i + 1) MOD NSEG) AND 128) <> 0 OR (kind((i + NSEG - 1) MOD NSEG) AND 128) <> 0) AND (kind(i) AND 128) = 0
+      IF (i MOD 8 = 4 OR edge) AND (kind(i) AND 1) = 0 THEN
         h = py(i) - 1 - groundY
         PUSH3D
         TRANSLATE3D px(i), groundY + h / 2, pz(i)
@@ -722,6 +829,16 @@ SUB DrawWorld (camS)
         IF night(circ) THEN Sprite dkx(d), dky(d), dkz(d), w, h, 0 ELSE Sprite dkx(d), dky(d) + h / 2, dkz(d), w, h, 0
       END IF
     NEXT
+    ' the coins (spinning)
+    IF kind(i) AND 32 THEN
+      TEXTURE3D tex.coin, 0: COLOR3D RGB(255, 255, 255)
+      FOR q = 0 TO 4
+        IF coinwait(i * 5 + q) <= 0 THEN
+          TrackAt (i + q * .45) * seglen, lane(i) * 3, .9 + .1 * SIN(t * 3 + q)
+          Sprite wx, wy, wz, .1 + .9 * ABS(COS(t * 4 + q)), 1, 0
+        END IF
+      NEXT
+    END IF
     ' the ? boxes
     IF kind(i) AND 4 THEN
       TEXTURE3D tex.box, 0: COLOR3D RGB(255, 255, 255)
@@ -739,19 +856,47 @@ SUB DrawWorld (camS)
           IF pk(p) = 1 THEN
             TEXTURE3D tex.rocket, 0: TrackAt ps(p), pl(p), .8: Sprite wx, wy, wz, 1, 1, t * 8
           ELSE
-            TEXTURE3D tex.gum, 0: TrackAt ps(p), pl(p), .06
+            TEXTURE3D tex.gum, 0
             Flat ps(p), pl(p), .06, 1.2
           END IF
         END IF
       END IF
     NEXT
-    ' the craft (their shadow first)
+    ' the craft
     FOR n = 0 TO NSHIP - 1
       IF INT((sd(n) - INT(sd(n) / tlen) * tlen) / seglen) = i THEN DrawShip n
     NEXT
   NEXT
   BLEND3D 0: DEPTH3D 1: CULL3D 1: TEXTURE3D 0
+  ' (a pause here, not at the end of the frame: the picture and what is written over it are then drawn in one go,
+  ' the screen never shown between the two)
+  PAUSE 1
   RENDER3D
+END SUB
+
+' A jump ramp over segment i: a striped wedge rising over two segments
+SUB Ramp (i, k)
+  IF kind((i + NSEG - 1) MOD NSEG) AND 16 THEN h0 = .7: h1 = 1.4 ELSE h0 = 0: h1 = .7
+  FOR q = 0 TO 5
+    a = -HW + q * 2
+    IF q MOD 2 THEN c = Fog(RGB(255, 210, 63), k) ELSE c = Fog(INK, k)
+    COLOR3D c
+    Node i, a, h0 + .03: x0 = wx: y0 = wy: z0 = wz
+    Node i, a + 2, h0 + .03: x1 = wx: y1 = wy: z1 = wz
+    Node i + 1, a + 2, h1 + .03: x2 = wx: y2 = wy: z2 = wz
+    Node i + 1, a, h1 + .03: x3 = wx: y3 = wy: z3 = wz
+    VERTEX3D x0, y0, z0: VERTEX3D x1, y1, z1: VERTEX3D x2, y2, z2
+    VERTEX3D x0, y0, z0: VERTEX3D x2, y2, z2: VERTEX3D x3, y3, z3
+  NEXT
+  FOR sd0 = -1 TO 1 STEP 2
+    COLOR3D Fog(INK, k)
+    Node i, sd0 * HW, 0: x0 = wx: y0 = wy: z0 = wz
+    Node i + 1, sd0 * HW, 0: x1 = wx: y1 = wy: z1 = wz
+    Node i + 1, sd0 * HW, h1: x2 = wx: y2 = wy: z2 = wz
+    Node i, sd0 * HW, h0: x3 = wx: y3 = wy: z3 = wz
+    VERTEX3D x0, y0, z0: VERTEX3D x1, y1, z1: VERTEX3D x2, y2, z2
+    VERTEX3D x0, y0, z0: VERTEX3D x2, y2, z2: VERTEX3D x3, y3, z3
+  NEXT
 END SUB
 
 ' A picture facing the camera, centred on (x, y, z), w wide and h high, turned by ang
@@ -821,66 +966,122 @@ SUB Rainbow (i, k)
 END SUB
 
 SUB DrawShip (n)
-  hov = .75 + .07 * SIN(t * 6 + n)
-  ' the shadow (multiplied on the floor)
-  BLEND3D 3: TEXTURE3D tex.shadow, 1: COLOR3D RGB(255, 255, 255)
-  Flat sd(n), lx(n), .05, 1.4
+  hov = .75 + .07 * SIN(t * 6 + n) + alt(n)
+  IF hop(n) > 0 THEN hov = hov + SIN(hop(n) / .18 * PI) * .5
+  ' the shadow (multiplied on the floor), not over a gap, nor when fallen
+  TrackAt sd(n), lx(n), 0
+  IF (fkind AND 128) = 0 AND ABS(lx(n)) < HW + .5 AND fall(n) <= 0 THEN
+    BLEND3D 3: TEXTURE3D tex.shadow, 1: COLOR3D RGB(255, 255, 255)
+    Flat sd(n), lx(n), .05, 1.4 / (1 + alt(n) * .25)
+  END IF
   BLEND3D 1
   TrackAt sd(n), lx(n), hov + .2
-  roll = -steer(n) * .3 + SIN(spin(n) * 18) * spin(n) * .6
+  rl = -steer(n) * .3 - drift(n) * .25 + SIN(spin(n) * 18) * spin(n) * .6
+  IF trick(n) > 0 THEN rl = rl + trick(n) * 2 * PI
+  IF fall(n) > 0 THEN rl = rl + (1.1 - fall(n)) * 3
   TEXTURE3D texShip(pilot(n)), 0: COLOR3D RGB(255, 255, 255)
   IF stuck(n) > 0 THEN COLOR3D RGB(255, 170, 220)
-  Sprite wx, wy, wz, 2.8, 2.1, roll
-  ' the flames, the bubble, the POW
+  IF star(n) > 0 THEN
+    SELECT CASE INT(t * 14) MOD 4
+      CASE 0: COLOR3D RGB(255, 140, 140)
+      CASE 1: COLOR3D RGB(255, 240, 120)
+      CASE 2: COLOR3D RGB(140, 255, 160)
+      CASE ELSE: COLOR3D RGB(150, 200, 255)
+    END SELECT
+  END IF
+  Sprite wx, wy, wz, 2.8, 2.1, rl
+  ' Pouf the cloud, fishing the craft back
+  IF rescue(n) > 0 THEN
+    TEXTURE3D tex.pouf, 0: COLOR3D RGB(255, 255, 255)
+    TrackAt sd(n), lx(n) - 1.2, hov + 4.2: Sprite wx, wy, wz, 4, 2.5, 0
+    TEXTURE3D 0: COLOR3D INK
+    TrackAt sd(n), lx(n), hov + 1: x0 = wx: y0 = wy: z0 = wz
+    TrackAt sd(n), lx(n), hov + 3.8
+    VERTEX3D x0 - crx * .05, y0, z0 - crz * .05: VERTEX3D x0 + crx * .05, y0, z0 + crz * .05: VERTEX3D wx + crx * .05, wy, wz + crz * .05
+    VERTEX3D x0 - crx * .05, y0, z0 - crz * .05: VERTEX3D wx + crx * .05, wy, wz + crz * .05: VERTEX3D wx - crx * .05, wy, wz - crz * .05
+  END IF
+  ' the flames, the drift's sparks, the bubble, the star's glow, the POW
+  BLEND3D 2
   IF turbo(n) > 0 OR thrust(n) THEN
-    TEXTURE3D tex.sun, 1: BLEND3D 2
+    TEXTURE3D tex.sun, 1
     IF turbo(n) > 0 THEN f = .9 ELSE f = .5
     COLOR3D RGB(255, 170, 60)
     TrackAt sd(n) - .6, lx(n) - .45, hov - .05: Sprite wx, wy, wz, f, f, t * 9
     TrackAt sd(n) - .6, lx(n) + .45, hov - .05: Sprite wx, wy, wz, f, f, t * 9
-    BLEND3D 1
   END IF
+  IF drift(n) <> 0 THEN
+    lv = SparkOf(driftT(n))
+    IF lv > 0 THEN
+      TEXTURE3D tex.spark, 1
+      IF lv = 1 THEN COLOR3D RGB(80, 170, 255) ELSE IF lv = 2 THEN COLOR3D RGB(255, 150, 40) ELSE COLOR3D RGB(255, 90, 230)
+      FOR q = 0 TO 2
+        sz = .5 + .4 * RND
+        TrackAt sd(n) - .9 - RND * .6, lx(n) - 1 + 2 * (q MOD 2) + (RND - .5) * .5, hov - .3 + RND * .3: Sprite wx, wy, wz, sz, sz, RND * 6
+      NEXT
+    END IF
+  END IF
+  IF star(n) > 0 THEN
+    TEXTURE3D tex.spark, 1: COLOR3D RGB(255, 220, 90)
+    FOR q = 0 TO 3
+      a = t * 5 + q * PI / 2
+      TrackAt sd(n), lx(n) + 1.8 * COS(a), hov + .3 + 1.2 * SIN(a): Sprite wx, wy, wz, .7, .7, t * 4
+    NEXT
+  END IF
+  BLEND3D 1
   IF shield(n) > 0 THEN
     TEXTURE3D 0: COLOR3D RGB(120, 220, 255), 70
     TrackAt sd(n), lx(n), hov + .3: Sprite wx, wy, wz, 3.6, 3, 0
   END IF
-  IF powT(n) > 0 THEN
+  IF powT(n) > 0 AND pow$(n) <> T$("BONK!") THEN
     TEXTURE3D tex.pow, 0: COLOR3D RGB(255, 255, 255)
-    TrackAt sd(n), lx(n), 2.8: s = 1.6 + (.7 - powT(n)) * 1.2: Sprite wx, wy, wz, s, s * .75, .2
+    TrackAt sd(n), lx(n), 2.8 + alt(n): s = 1.6 + (.7 - powT(n)) * 1.2: Sprite wx, wy, wz, s, s * .75, .2
   END IF
 END SUB
+
+FUNCTION SparkOf (d)
+  IF d > 2.4 THEN SparkOf = 3 ELSE IF d > 1.4 THEN SparkOf = 2 ELSE IF d > .6 THEN SparkOf = 1 ELSE SparkOf = 0
+END FUNCTION
 
 ' ================================================================================================
 ' The race
 ' ================================================================================================
 SUB SetupGrid
-  vmax = 90
+  IF demo THEN vmax = 90 ELSE vmax = classV(klass)
   FOR n = 0 TO NSHIP - 1: order(n) = n: NEXT
   FOR n = NSHIP - 1 TO 1 STEP -1: k = INT(RND * (n + 1)): SWAP order(n), order(k): NEXT
-  ' the player at the back (the fun: passing them all)
-  IF NOT demo THEN
-    FOR g = 0 TO NSHIP - 1: IF order(g) = 0 THEN SWAP order(g), order(NSHIP - 1)
-    NEXT
-  END IF
   k = 0
   FOR n = 0 TO NSHIP - 1
     IF n = 0 THEN pilot(n) = mypilot ELSE IF k = mypilot THEN k = k + 1
     IF n > 0 THEN pilot(n) = k: k = k + 1
   NEXT
+  IF gpOn AND gpRace > 1 AND NOT demo THEN
+    ' a Grand Prix: the leader in front
+    FOR a = 0 TO NSHIP - 2: FOR b = a + 1 TO NSHIP - 1
+      IF gpPts(pilot(order(b))) > gpPts(pilot(order(a))) THEN SWAP order(a), order(b)
+    NEXT: NEXT
+  ELSEIF NOT demo THEN
+    ' the player at the back (the fun: passing them all)
+    FOR g = 0 TO NSHIP - 1: IF order(g) = 0 THEN SWAP order(g), order(NSHIP - 1)
+    NEXT
+  END IF
   FOR g = 0 TO NSHIP - 1
     n = order(g)
     sd(n) = -6 - g * 5.5: lx(n) = 2.4 * (1 - 2 * (g MOD 2))
     v(n) = 0: vl(n) = 0: steer(n) = 0: thrust(n) = 0: item(n) = 0: shield(n) = 0: turbo(n) = 0: spin(n) = 0: stuck(n) = 0
     arrived(n) = 0: fintime(n) = 0: lapst(n) = 0: bestlap(n) = 0: firewait(n) = 1: powT(n) = 0: bonkT(n) = 0
+    coins(n) = 0: drift(n) = 0: driftT(n) = 0: driftIn(n) = 0: hop(n) = 0: alt(n) = 0: vh(n) = 0: air(n) = 0: trick(n) = 0: trickT(n) = 0
+    fall(n) = 0: rescue(n) = 0: star(n) = 0: ammo(n) = 0: roll(n) = 0: rollIt(n) = 0: stall(n) = 0
     skill(n) = .92 + RND * .05 + circ * .01: aioff(n) = (RND - .5) * 2.4
     IF n = 0 AND NOT demo THEN skill(n) = 1
   NEXT
   FOR p = 0 TO NPROJ - 1: pk(p) = 0: NEXT
-  racet = 0: msgT = 0
+  FOR i = 0 TO NSEG * 5: coinwait(i) = 0: NEXT
+  FOR i = 0 TO NSEG * 3: boxwait(i) = 0: NEXT
+  racet = 0: msgT = 0: startPress = -1
 END SUB
 
 SUB Race
-  demo = 0
+  demo = 0: quitRace = 0
   SetupGrid
   state = 1: cdown = 3.99: paused = 0: lastBeep = 4: vdist = 56
   camL = lx(0) * .6: camH = 3
@@ -891,23 +1092,37 @@ SUB Race
     k$ = UCASE$(INKEY$)
     p = PAD
     IF state = 3 THEN
-      IF k$ = CHR$(13) OR k$ = CHR$(27) OR k$ = " " OR ((p AND 16) <> 0 AND (padprev AND 16) = 0) THEN padprev = p: EXIT DO
+      IF k$ = CHR$(13) OR k$ = " " OR ((p AND 16) <> 0 AND (padprev AND 16) = 0) THEN padprev = p: EXIT DO
+      IF k$ = CHR$(27) THEN quitRace = -1: EXIT DO
     ELSEIF k$ = "P" OR ((p AND 8192) <> 0 AND (padprev AND 8192) = 0) THEN
       paused = NOT paused
       IF paused THEN SoundsOff
     ELSEIF k$ = CHR$(27) THEN
-      SoundsOff: EXIT DO
-    ELSEIF k$ = " " AND state = 2 AND NOT paused THEN
-      UseItem 0
+      quitRace = -1: SoundsOff: EXIT DO
+    ELSEIF NOT paused THEN
+      ' before GO: the moment of the press (a rocket start); after: the item
+      IF state = 1 AND startPress < 0 AND (k$ = " " OR k$ = CHR$(0) + "H" OR MOUSEB) THEN startPress = cdown
+      IF k$ = " " AND state = 2 THEN UseItem 0
+      ' a trick: the drift key pressed just after a ramp
+      IF (k$ = "C" OR k$ = "V") AND air(0) AND trickT(0) > 0 AND trick(0) = 0 THEN trick(0) = .001
     END IF
-    IF (p AND 16) <> 0 AND (padprev AND 16) = 0 AND state = 2 AND NOT paused THEN UseItem 0
+    IF (p AND 16) <> 0 AND (padprev AND 16) = 0 AND NOT paused THEN
+      IF state = 2 THEN UseItem 0 ELSE IF startPress < 0 THEN startPress = cdown
+    END IF
+    IF (p AND 768) <> 0 AND (padprev AND 768) = 0 AND air(0) AND trickT(0) > 0 AND trick(0) = 0 THEN trick(0) = .001
     padprev = p
     IF NOT paused THEN
       t = t + dt
       IF state = 1 THEN
         cdown = cdown - dt
         IF INT(cdown) < lastBeep AND cdown > 0 THEN lastBeep = INT(cdown): Sfx 10, 440, 0, 160, .15
-        IF cdown <= 0 THEN state = 2: Sfx 10, 880, 0, 180, .35: Say T$("GO!"), 1
+        IF cdown <= 0 THEN
+          state = 2: Sfx 10, 880, 0, 180, .35: Say T$("GO!"), 1
+          IF startPress >= .7 AND startPress <= 1.9 THEN turbo(0) = 1.3: v(0) = 30: Say T$("ROCKET START!"), 1.4: Sfx 13, 160, 4, 160, .6
+          IF startPress > 2.6 THEN stall(0) = .9: Say T$("TOO EARLY!"), 1.2: Sfx 13, 80, 4, 120, .4
+          FOR n = 1 TO NSHIP - 1: v(n) = 4: IF RND < .35 THEN turbo(n) = .6 + RND * .5
+          NEXT
+        END IF
       ELSE
         racet = racet + dt
       END IF
@@ -921,6 +1136,15 @@ SUB Race
         FOR n = 0 TO NSHIP - 1
           IF arrived(n) = 0 THEN fintime(n) = racet + (LAPS * tlen - sd(n)) / (v(n) + 40)
         NEXT
+        ' the places at the end, the Grand Prix's points
+        FOR n = 0 TO NSHIP - 1
+          place(n) = 1
+          FOR m = 0 TO NSHIP - 1: IF m <> n AND fintime(m) < fintime(n) THEN place(n) = place(n) + 1
+          NEXT
+        NEXT
+        IF gpOn THEN
+          FOR n = 0 TO NSHIP - 1: gpPts(pilot(n)) = gpPts(pilot(n)) + points(place(n)): NEXT
+        END IF
         SoundsOff
         Sfx 10, 523, 0, 160, .15: Sfx 11, 659, 0, 160, .3: Sfx 12, 784, 0, 160, .5
       END IF
@@ -935,18 +1159,20 @@ SUB Race
     END IF
     IF state = 3 THEN Results
     SfxTick
-    PAUSE 1
   LOOP
   SoundsOff
 END SUB
 
 SUB Camera (n)
   k = dt * 5: IF k > 1 THEN k = 1
-  camL = camL + (lx(n) * .6 - camL) * k
-  camH = camH + (3 + v(n) * .006 - camH) * k
+  l = lx(n): IF l > HW THEN l = HW
+  IF l < -HW THEN l = -HW
+  a = alt(n): IF fall(n) > 0 THEN a = 0
+  camL = camL + (l * .6 - camL) * k
+  camH = camH + (3 + v(n) * .006 + a * .6 - camH) * k
   TrackAt sd(n) - 8, camL, camH
   cex = wx: cey = wy: cez = wz
-  TrackAt sd(n) + 10, camL * .8, 1.1
+  TrackAt sd(n) + 10, camL * .8, 1.1 + a * .5
   ctx = wx: cty = wy: ctz = wz
 END SUB
 
@@ -957,6 +1183,13 @@ END SUB
 
 SUB Controls
   FOR n = 0 TO NSHIP - 1
+    IF roll(n) > 0 THEN
+      roll(n) = roll(n) - dt
+      IF roll(n) <= 0 THEN
+        item(n) = rollIt(n): IF item(n) = 6 THEN ammo(n) = 3 ELSE ammo(n) = 1
+        IF n = 0 AND NOT demo THEN Sfx 12, 988, 0, 120, .12: Say itemName$(item(0)), 1
+      END IF
+    END IF
     IF state = 1 THEN
       steer(n) = 0: thrust(n) = 0
     ELSEIF n = 0 AND NOT demo AND arrived(0) = 0 THEN
@@ -965,6 +1198,9 @@ SUB Controls
       IF KEYDOWN("RIGHT") OR (p AND 8) THEN s = s + 1
       IF MOUSEB THEN
         IF MOUSEX < 320 THEN s = s - 1 ELSE s = s + 1
+        mouseT = mouseT + dt
+      ELSE
+        mouseT = 0
       END IF
       st = STICK(0): IF ABS(st - 100) > 18 THEN s = (st - 100) / 99
       IF s > 1 THEN s = 1
@@ -972,14 +1208,18 @@ SUB Controls
       steer(0) = steer(0) + (s - steer(0)) * MIN(1, dt * 10)
       brake(0) = KEYDOWN("DOWN") OR (p AND 2) OR (p AND 32)
       IF brake(0) THEN thrust(0) = 0 ELSE thrust(0) = 1
+      ' the drift: Shift, C or V (a gamepad: L / R); a finger held on a side a while
+      driftIn(0) = KEYDOWN("SHIFT") OR KEYDOWN("C") OR KEYDOWN("V") OR (p AND 768) <> 0 OR (mouseT > .35 AND ABS(s) > .5)
     ELSE
       Think n
     END IF
   NEXT
 END SUB
 
-' The computer's pilots: the inside of the coming turn, around the craft ahead, the pads and the boxes
+' The computer's pilots: the inside of the coming turn, around the craft ahead, the pads, the boxes, the coins;
+' a drift in the turns, a trick on the jumps
 SUB Think (n)
+  IF arrived(n) THEN thrust(n) = .6: driftIn(n) = 0: EXIT SUB
   TrackAt sd(n) + 22 + v(n) * .25, 0, 0
   ka = fcv
   tg = ka * 70 + aioff(n): IF tg > HW - 1.6 THEN tg = HW - 1.6
@@ -993,13 +1233,26 @@ SUB Think (n)
     END IF
   NEXT
   TrackAt sd(n) + 14, 0, 0
-  IF (fkind AND 2) OR ((fkind AND 4) AND item(n) = 0) THEN tg = flane * 3
+  IF (fkind AND 2) OR ((fkind AND 4) AND item(n) = 0) OR ((fkind AND 32) AND coins(n) < 10) THEN tg = flane * 3
+  TrackAt sd(n), 0, 0
+  IF fkind AND 64 THEN
+    IF tg > HW - 2.4 THEN tg = HW - 2.4
+    IF tg < -HW + 2.4 THEN tg = -HW + 2.4
+  END IF
   s = (tg - lx(n)) * .55 - vl(n) * .3
   IF s > 1 THEN s = 1
   IF s < -1 THEN s = -1
   steer(n) = steer(n) + (s - steer(n)) * MIN(1, dt * 8)
+  IF ABS(ka) > .0075 AND (fkind AND 64) = 0 THEN
+    IF driftIn(n) = 0 AND RND < skill(n) * dt * 4 THEN driftIn(n) = -1
+  ELSEIF ABS(ka) < .004 THEN
+    driftIn(n) = 0
+  END IF
+  IF drift(n) * ka < 0 THEN driftIn(n) = 0
+  IF driftIn(n) AND drift(n) = 0 THEN steer(n) = SGN(ka) * MAX(.5, ABS(steer(n)))
+  IF air(n) AND trickT(n) > 0 AND trick(n) = 0 AND RND < skill(n) * dt * 8 THEN trick(n) = .001
   lim = vmax * skill(n)
-  IF ABS(ka) > .001 THEN vt = SQR(62 / (.1 * ABS(ka))): IF vt < lim THEN lim = vt
+  IF ABS(ka) > .001 THEN vt = SQR(62 / (.1 * ABS(ka))) * vmax / 90: IF vt < lim THEN lim = vt
   IF NOT demo AND n > 0 THEN
     d = sd(n) - sd(0)
     IF d > 90 THEN lim = lim * .94
@@ -1010,7 +1263,7 @@ SUB Think (n)
     firewait(n) = firewait(n) - dt
     IF firewait(n) < 0 THEN
       w = item(n)
-      IF w >= 3 THEN
+      IF w = 3 OR w = 4 OR w = 5 THEN
         UseItem n
       ELSEIF w = 2 THEN
         IF Behind(n, 40) >= 0 THEN UseItem n
@@ -1043,89 +1296,47 @@ END FUNCTION
 
 SUB Physics
   FOR n = 0 TO NSHIP - 1
-    TrackAt sd(n), lx(n), 0
-    top = vmax * skill(n)
-    IF turbo(n) > 0 THEN top = top * 1.45: turbo(n) = turbo(n) - dt
-    IF turbo(n) < 0 THEN turbo(n) = 0
-    IF stuck(n) > 0 THEN top = top * .5: stuck(n) = stuck(n) - dt
-    IF thrust(n) THEN
-      v(n) = v(n) + (top - v(n)) * .75 * dt
-    ELSEIF brake(n) AND n = 0 THEN
-      v(n) = v(n) - v(n) * 1.4 * dt
+    me = (n = 0 AND NOT demo)
+    IF fall(n) > 0 THEN
+      ' fallen: down below, then Pouf the cloud brings the craft back
+      fall(n) = fall(n) - dt: vh(n) = vh(n) - 30 * dt: alt(n) = alt(n) + vh(n) * dt: v(n) = v(n) * (1 - dt * 2)
+      IF fall(n) <= 0 THEN
+        rescue(n) = 1.6: lx(n) = 0: vl(n) = 0: v(n) = 0: alt(n) = 7: vh(n) = 0: drift(n) = 0: spin(n) = 0
+        FOR q = 1 TO 12
+          TrackAt sd(n), 0, 0
+          IF (fkind AND 128) = 0 THEN EXIT FOR
+          sd(n) = sd(n) + seglen
+        NEXT
+        sd(n) = sd(n) + seglen * .5
+        IF me THEN Sfx 12, 700, 1, 140, .3
+      END IF
+    ELSEIF rescue(n) > 0 THEN
+      rescue(n) = rescue(n) - dt: alt(n) = MAX(0, 7 * (rescue(n) - .4) / 1.2): v(n) = 0
+      IF rescue(n) <= 0 THEN alt(n) = 0: v(n) = 18: air(n) = 0
     ELSE
-      v(n) = v(n) - v(n) * .45 * dt
-    END IF
-    IF v(n) > top THEN v(n) = v(n) - (v(n) - top) * 1.5 * dt
-    v(n) = v(n) - fty * 18 * dt
-    IF v(n) < 0 THEN v(n) = 0
-    vl(n) = vl(n) + steer(n) * 46 * dt - fcv * v(n) * v(n) * .085 * dt
-    vl(n) = vl(n) - vl(n) * 3 * dt
-    lx(n) = lx(n) + vl(n) * dt
-    lim = HW - 1.2
-    IF ABS(lx(n)) > lim THEN
-      lx(n) = lim * SGN(lx(n)): vl(n) = -vl(n) * .4
-      v(n) = v(n) - v(n) * 1.6 * dt
-      IF n = 0 AND NOT demo AND bonkT(0) <= 0 AND v(0) > 20 THEN bonkT(0) = .6: Sfx 11, 120, 2, 140, .12: Pow 0, T$("BONK!")
-    END IF
-    IF bonkT(n) > 0 THEN bonkT(n) = bonkT(n) - dt
-    IF powT(n) > 0 THEN powT(n) = powT(n) - dt
-    sold = sd(n)
-    sd(n) = sd(n) + v(n) * dt
-    IF spin(n) > 0 THEN spin(n) = spin(n) - dt * 1.2: IF spin(n) < 0 THEN spin(n) = 0
-    IF shield(n) > 0 THEN shield(n) = shield(n) - dt: IF shield(n) < 0 THEN shield(n) = 0
-    ' a speed pad
-    IF (fkind AND 2) AND ABS(lx(n) - flane * 3) < 1.8 THEN
-      IF turbo(n) < .5 THEN turbo(n) = .5: v(n) = v(n) + 10: IF n = 0 AND NOT demo THEN Sfx 12, 220, 2, 150, .3
-    END IF
-    ' the ? boxes
-    IF (fkind AND 4) THEN
-      i = INT((sd(n) - INT(sd(n) / tlen) * tlen) / seglen)
-      FOR q = 0 TO 2
-        IF boxwait(i * 3 + q) <= 0 AND ABS(lx(n) - (q - 1) * 3.2) < 1.8 THEN
-          boxwait(i * 3 + q) = 3
-          IF item(n) = 0 THEN
-            r = RND
-            IF place(n) <= 2 THEN
-              IF r < .45 THEN item(n) = 2 ELSE IF r < .75 THEN item(n) = 3 ELSE IF r < .9 THEN item(n) = 1 ELSE item(n) = 4
-            ELSEIF place(n) >= 5 THEN
-              IF r < .45 THEN item(n) = 4 ELSE IF r < .85 THEN item(n) = 1 ELSE item(n) = 3
-            ELSE
-              item(n) = 1 + INT(r * 4)
-            END IF
-            firewait(n) = .6 + RND * 1.5
-            IF n = 0 AND NOT demo THEN Sfx 12, 880, 0, 120, .15: Say itemName$(item(0)), 1
-          END IF
-        END IF
-      NEXT
-    END IF
-    ' a lap
-    IF INT(sd(n) / tlen) > INT(sold / tlen) AND sd(n) > 0 AND arrived(n) = 0 THEN
-      lt = racet - lapst(n)
-      IF INT(sold / tlen) >= 0 THEN
-        IF bestlap(n) = 0 OR lt < bestlap(n) THEN bestlap(n) = lt
-      END IF
-      lapst(n) = racet
-      IF sd(n) >= LAPS * tlen THEN
-        arrived(n) = -1: fintime(n) = racet
-      ELSEIF n = 0 AND NOT demo AND INT(sold / tlen) >= 0 THEN
-        lp = INT(sd(0) / tlen) + 1
-        IF lp = LAPS THEN Say T$("LAST LAP!"), 1.5 ELSE Say T$("LAP") + " " + LTRIM$(STR$(lp)), 1.2
-        Sfx 12, 523, 1, 140, .25
-      END IF
+      Move n, me
     END IF
   NEXT
   FOR i = 0 TO NSEG * 3 - 1: IF boxwait(i) > 0 THEN boxwait(i) = boxwait(i) - dt
   NEXT
-  ' the craft against each other
+  FOR i = 0 TO NSEG * 5 - 1: IF coinwait(i) > 0 THEN coinwait(i) = coinwait(i) - dt
+  NEXT
+  ' the craft against each other (a star knocks the others away)
   FOR a = 0 TO NSHIP - 2
     FOR b = a + 1 TO NSHIP - 1
       d = sd(b) - sd(a): d = d - tlen * INT(d / tlen + .5)
-      IF ABS(d) < 2.8 AND ABS(lx(b) - lx(a)) < 2.2 THEN
-        push = (2.2 - ABS(lx(b) - lx(a))) / 2 + .02
-        IF lx(b) >= lx(a) THEN lx(b) = lx(b) + push: lx(a) = lx(a) - push ELSE lx(b) = lx(b) - push: lx(a) = lx(a) + push
-        x = vl(a): vl(a) = vl(b) * .6: vl(b) = x * .6
-        IF d > 0 THEN v(a) = v(a) * .985 ELSE v(b) = v(b) * .985
-        IF a = 0 AND NOT demo AND state = 2 THEN Sfx 11, 90, 2, 110, .08
+      IF ABS(d) < 2.8 AND ABS(lx(b) - lx(a)) < 2.2 AND ABS(alt(a) - alt(b)) < 1.5 AND fall(a) + fall(b) + rescue(a) + rescue(b) <= 0 THEN
+        IF star(a) > 0 AND star(b) <= 0 THEN
+          Hit b, 3
+        ELSEIF star(b) > 0 AND star(a) <= 0 THEN
+          Hit a, 3
+        ELSE
+          push = (2.2 - ABS(lx(b) - lx(a))) / 2 + .02
+          IF lx(b) >= lx(a) THEN lx(b) = lx(b) + push: lx(a) = lx(a) - push ELSE lx(b) = lx(b) - push: lx(a) = lx(a) + push
+          x = vl(a): vl(a) = vl(b) * .6: vl(b) = x * .6
+          IF d > 0 THEN v(a) = v(a) * .985 ELSE v(b) = v(b) * .985
+          IF a = 0 AND NOT demo AND state = 2 THEN Sfx 11, 90, 2, 110, .08
+        END IF
       END IF
     NEXT
   NEXT
@@ -1146,14 +1357,180 @@ SUB Physics
   NEXT
 END SUB
 
+' One craft on the track: its speed, the drift, the walls (or none: a fall), a jump, the pads, boxes, coins, a lap
+SUB Move (n, me)
+  TrackAt sd(n), lx(n), 0
+  top = vmax * skill(n) * (1 + coins(n) * .012)
+  IF star(n) > 0 THEN top = top * 1.18: star(n) = star(n) - dt
+  IF turbo(n) > 0 THEN top = top * 1.45: turbo(n) = turbo(n) - dt
+  IF turbo(n) < 0 THEN turbo(n) = 0
+  IF stuck(n) > 0 THEN top = top * .5: stuck(n) = stuck(n) - dt
+  IF stall(n) > 0 THEN stall(n) = stall(n) - dt: thrust(n) = 0: v(n) = 0
+  IF air(n) = 0 THEN
+    IF thrust(n) THEN
+      v(n) = v(n) + (top - v(n)) * .75 * dt
+    ELSEIF brake(n) AND n = 0 THEN
+      v(n) = v(n) - v(n) * 1.4 * dt
+    ELSE
+      v(n) = v(n) - v(n) * .45 * dt
+    END IF
+    v(n) = v(n) - fty * 18 * dt
+  END IF
+  IF v(n) > top THEN v(n) = v(n) - (v(n) - top) * 1.5 * dt
+  IF v(n) < 0 THEN v(n) = 0
+  ' the drift: a hop, then it turns into the turn and charges sparks; let go: a turbo (blue, orange, pink)
+  IF drift(n) = 0 AND driftIn(n) AND air(n) = 0 AND v(n) > 30 AND spin(n) <= 0 AND ABS(steer(n)) > .3 THEN
+    drift(n) = SGN(steer(n)): driftT(n) = 0: hop(n) = .18
+    IF me THEN Sfx 12, 400, 1, 100, .08
+  END IF
+  IF drift(n) <> 0 AND (driftIn(n) = 0 OR v(n) < 22 OR spin(n) > 0) THEN
+    lv = SparkOf(driftT(n))
+    IF lv > 0 AND spin(n) <= 0 THEN
+      IF lv = 1 THEN tb = .5 ELSE IF lv = 2 THEN tb = .9 ELSE tb = 1.3
+      IF turbo(n) < tb THEN turbo(n) = tb
+      v(n) = v(n) + 4 * lv
+      IF me THEN Sfx 13, 150 + 60 * lv, 4, 140, .3
+    END IF
+    drift(n) = 0: driftT(n) = 0
+  END IF
+  st = steer(n): pushk = 1
+  IF drift(n) <> 0 THEN
+    a = steer(n) * drift(n): IF a < 0 THEN a = 0
+    old = SparkOf(driftT(n))
+    driftT(n) = driftT(n) + dt * (.6 + .7 * a)
+    IF me AND SparkOf(driftT(n)) > old THEN Sfx 9, 1800 + 300 * old, 0, 60, .05
+    a = steer(n) * drift(n): IF a > 1 THEN a = 1
+    IF a < -1 THEN a = -1
+    st = drift(n) * (.55 + .5 * a): pushk = .55
+  END IF
+  IF hop(n) > 0 THEN hop(n) = hop(n) - dt
+  IF air(n) THEN st = st * .35: pushk = pushk * .5
+  vl(n) = vl(n) + st * 46 * dt - fcv * v(n) * v(n) * .085 * pushk * dt
+  vl(n) = vl(n) - vl(n) * 3 * dt
+  lx(n) = lx(n) + vl(n) * dt
+  ' the walls; an open edge or a gap has none: over it, the craft falls
+  lim = HW - 1.2
+  IF fkind AND (64 OR 128) THEN
+    IF ABS(lx(n)) > HW + .4 AND air(n) = 0 THEN FallOff n, me: EXIT SUB
+  ELSEIF ABS(lx(n)) > lim THEN
+    lx(n) = lim * SGN(lx(n)): vl(n) = -vl(n) * .4
+    v(n) = v(n) - v(n) * 1.6 * dt
+    IF me AND bonkT(0) <= 0 AND v(0) > 20 THEN bonkT(0) = .6: Sfx 11, 120, 2, 140, .12: Pow 0, T$("BONK!")
+  END IF
+  IF bonkT(n) > 0 THEN bonkT(n) = bonkT(n) - dt
+  IF powT(n) > 0 THEN powT(n) = powT(n) - dt
+  ' a jump: the ramp throws the craft up; a trick (pressed just after the ramp) is a turbo on landing
+  IF air(n) THEN
+    alt(n) = alt(n) + vh(n) * dt: vh(n) = vh(n) - 30 * dt
+    IF trickT(n) > 0 THEN trickT(n) = trickT(n) - dt
+    IF trick(n) > 0 AND trick(n) < 1 THEN trick(n) = MIN(1, trick(n) + dt * 2.2)
+    IF alt(n) <= 0 THEN
+      alt(n) = 0: vh(n) = 0: air(n) = 0
+      TrackAt sd(n), lx(n), 0
+      IF fkind AND 128 THEN FallOff n, me: EXIT SUB
+      IF trick(n) >= 1 THEN
+        IF turbo(n) < .8 THEN turbo(n) = .8
+        v(n) = v(n) + 10
+        IF me THEN Say T$("SUPER!"), .9: Sfx 13, 700, 0, 150, .3
+      ELSEIF me THEN
+        Sfx 11, 100, 2, 140, .1
+      END IF
+      trick(n) = 0
+    END IF
+  ELSEIF (fkind AND 16) AND v(n) > 5 THEN
+    air(n) = -1: vh(n) = 8 + v(n) * .06: alt(n) = .01: trickT(n) = .45: trick(n) = 0: drift(n) = 0
+    IF me THEN Sfx 12, 300, 1, 140, .3
+  ELSEIF fkind AND 128 THEN
+    FallOff n, me: EXIT SUB
+  END IF
+  sold = sd(n)
+  sd(n) = sd(n) + v(n) * dt
+  IF spin(n) > 0 THEN spin(n) = spin(n) - dt * 1.2: IF spin(n) < 0 THEN spin(n) = 0
+  IF shield(n) > 0 THEN shield(n) = shield(n) - dt: IF shield(n) < 0 THEN shield(n) = 0
+  ' a speed pad
+  IF (fkind AND 2) AND air(n) = 0 AND ABS(lx(n) - flane * 3) < 1.8 THEN
+    IF turbo(n) < .5 THEN turbo(n) = .5: v(n) = v(n) + 10: IF me THEN Sfx 12, 220, 2, 150, .3
+  END IF
+  i = INT((sd(n) - INT(sd(n) / tlen) * tlen) / seglen)
+  ' the ? boxes: a roulette, then an item
+  IF (kind(i) AND 4) AND alt(n) < 2.5 THEN
+    FOR q = 0 TO 2
+      IF boxwait(i * 3 + q) <= 0 AND ABS(lx(n) - (q - 1) * 3.2) < 1.8 THEN
+        boxwait(i * 3 + q) = 3
+        IF item(n) = 0 AND roll(n) <= 0 THEN
+          rollIt(n) = RollItem(n): firewait(n) = .6 + RND * 1.5
+          IF me THEN
+            roll(n) = 1.1: Sfx 12, 880, 0, 120, .15
+          ELSE
+            item(n) = rollIt(n): IF item(n) = 6 THEN ammo(n) = 3 ELSE ammo(n) = 1
+          END IF
+        END IF
+      END IF
+    NEXT
+  END IF
+  ' the coins: ten at most, each a little more speed
+  IF (kind(i) AND 32) AND alt(n) < 1.6 AND ABS(lx(n) - lane(i) * 3) < 1.4 THEN
+    FOR q = 0 TO 4
+      IF coinwait(i * 5 + q) <= 0 AND ABS(sd(n) - INT(sd(n) / tlen) * tlen - (i + q * .45) * seglen) < 1.5 THEN
+        coinwait(i * 5 + q) = 12
+        IF coins(n) < 10 THEN coins(n) = coins(n) + 1
+        IF me THEN Sfx 9, 1320, 0, 110, .1
+      END IF
+    NEXT
+  END IF
+  ' a lap
+  IF INT(sd(n) / tlen) > INT(sold / tlen) AND sd(n) > 0 AND arrived(n) = 0 THEN
+    lt = racet - lapst(n)
+    IF INT(sold / tlen) >= 0 THEN
+      IF bestlap(n) = 0 OR lt < bestlap(n) THEN bestlap(n) = lt
+    END IF
+    lapst(n) = racet
+    IF sd(n) >= LAPS * tlen THEN
+      arrived(n) = -1: fintime(n) = racet
+    ELSEIF me AND INT(sold / tlen) >= 0 THEN
+      lp = INT(sd(0) / tlen) + 1
+      IF lp = LAPS THEN Say T$("LAST LAP!"), 1.5 ELSE Say T$("LAP") + " " + LTRIM$(STR$(lp)), 1.2
+      Sfx 12, 523, 1, 140, .25
+    END IF
+  END IF
+END SUB
+
+SUB FallOff (n, me)
+  fall(n) = 1.1: air(n) = 0: vh(n) = 2: drift(n) = 0: trick(n) = 0
+  LoseCoins n, 3
+  IF me THEN Say T$("OOPS!"), 1.2: Sfx 11, 900, 1, 140, .8
+END SUB
+
+SUB LoseCoins (n, k)
+  coins(n) = coins(n) - k: IF coins(n) < 0 THEN coins(n) = 0
+END SUB
+
+' What a ? box gives (1 rocket 2 gum 3 bubble 4 turbo 5 star 6 three rockets): the leaders get something to defend
+' with, those behind something to catch up
+FUNCTION RollItem (n)
+  r = RND
+  IF place(n) <= 1 THEN
+    IF r < .4 THEN RollItem = 2 ELSE IF r < .7 THEN RollItem = 3 ELSE IF r < .9 THEN RollItem = 1 ELSE RollItem = 6
+  ELSEIF place(n) <= 3 THEN
+    IF r < .3 THEN RollItem = 1 ELSE IF r < .5 THEN RollItem = 2 ELSE IF r < .7 THEN RollItem = 6 ELSE IF r < .9 THEN RollItem = 4 ELSE RollItem = 3
+  ELSEIF place(n) <= 4 THEN
+    IF r < .3 THEN RollItem = 6 ELSE IF r < .6 THEN RollItem = 4 ELSE IF r < .8 THEN RollItem = 1 ELSE RollItem = 5
+  ELSE
+    IF r < .3 THEN RollItem = 5 ELSE IF r < .6 THEN RollItem = 4 ELSE IF r < .85 THEN RollItem = 6 ELSE RollItem = 1
+  END IF
+END FUNCTION
+
 SUB UseItem (n)
   w = item(n)
-  IF w = 0 THEN EXIT SUB
-  item(n) = 0
+  IF w = 0 OR roll(n) > 0 OR fall(n) > 0 OR rescue(n) > 0 THEN EXIT SUB
+  ammo(n) = ammo(n) - 1: IF ammo(n) <= 0 THEN item(n) = 0
   mine = (n = 0 AND NOT demo)
   SELECT CASE w
     CASE 1          ' a rocket: it follows the craft ahead
       NewShot 1, sd(n) + 3, lx(n), v(n) + 60, n, Ahead(n, 160), 4
+      IF mine THEN Sfx 13, 300, 4, 150, .3
+    CASE 6          ' one of three rockets, straight on
+      NewShot 1, sd(n) + 3, lx(n), v(n) + 70, n, -1, 3
       IF mine THEN Sfx 13, 300, 4, 150, .3
     CASE 2          ' gum, dropped behind
       NewShot 2, sd(n) - 3.5, lx(n), 0, n, -1, 40
@@ -1164,6 +1541,9 @@ SUB UseItem (n)
     CASE 4
       turbo(n) = 1.8: v(n) = v(n) + 22
       IF mine THEN Sfx 13, 160, 4, 160, .6
+    CASE 5          ' the star: nothing hurts, faster, the others knocked away
+      star(n) = 6: stuck(n) = 0: v(n) = v(n) + 10
+      IF mine THEN Say T$("STAR POWER!"), 1: Sfx 13, 880, 0, 160, .5
   END SELECT
 END SUB
 
@@ -1187,7 +1567,7 @@ SUB Shots
       IF pk(p) = 1 AND ptgt(p) >= 0 THEN pl(p) = pl(p) + SGN(lx(ptgt(p)) - pl(p)) * MIN(ABS(lx(ptgt(p)) - pl(p)), 12 * dt)
       IF ABS(pl(p)) > HW - .6 AND pk(p) = 1 THEN pk(p) = 0
       FOR n = 0 TO NSHIP - 1
-        IF pk(p) AND (n <> pown(p) OR (pk(p) = 2 AND plife(p) < 39.4)) THEN
+        IF pk(p) AND (n <> pown(p) OR (pk(p) = 2 AND plife(p) < 39.4)) AND alt(n) < 2 AND fall(n) <= 0 AND rescue(n) <= 0 THEN
           d = sd(n) - ps(p): d = d - tlen * INT(d / tlen + .5)
           IF ABS(d) < 2 AND ABS(lx(n) - pl(p)) < 1.5 THEN
             Hit n, pk(p)
@@ -1200,11 +1580,13 @@ SUB Shots
 END SUB
 
 SUB Hit (n, k)
+  IF star(n) > 0 THEN EXIT SUB
   IF shield(n) > 0 THEN shield(n) = 0: Pow n, T$("POP!"): Sfx 9, 900, 1, 120, .1: EXIT SUB
+  drift(n) = 0: driftT(n) = 0: trick(n) = 0
   IF k = 2 THEN
-    stuck(n) = 1.6: v(n) = v(n) * .55: Pow n, T$("SPLAT!"): Sfx 9, 160, 1, 140, .2
+    stuck(n) = 1.6: v(n) = v(n) * .55: LoseCoins n, 2: Pow n, T$("SPLAT!"): Sfx 9, 160, 1, 140, .2
   ELSE
-    v(n) = v(n) * .35: spin(n) = 1: vl(n) = vl(n) + (RND - .5) * 20: Pow n, T$("POW!"): Sfx 9, 80, 4, 180, .4
+    v(n) = v(n) * .35: spin(n) = 1: vl(n) = vl(n) + (RND - .5) * 20: LoseCoins n, 3: Pow n, T$("POW!"): Sfx 9, 80, 4, 180, .4
   END IF
 END SUB
 
@@ -1221,15 +1603,15 @@ SUB Hud
     IF cdown > 0 THEN
       IF n = 3 THEN c = RGB(255, 90, 95) ELSE IF n = 2 THEN c = RGB(255, 160, 40) ELSE c = RGB(255, 220, 60)
       BigText LTRIM$(STR$(n)), 320, 120, 12 + 6 * (cdown - INT(cdown)), c
+      IF startPress < 0 AND NOT demo THEN a$ = T$("Space just before GO: a rocket start!"): Panel 316 - LEN(a$) * 4, 222, LEN(a$) * 8 + 8, 20: DRAWTEXT 320 - LEN(a$) * 4, 224, a$, INK
     END IF
   END IF
   IF msgT > 0 THEN
     msgT = msgT - dt
     BigText msg$, 320, 110, 7, RGB(255, 255, 255)
   END IF
-  ' the POWs written (the picture is in 3D, the word over it)
   IF demo THEN EXIT SUB
-  ' the place, the lap, the time
+  ' the place, the lap, the time, the coins
   pl$ = LTRIM$(STR$(place(0)))
   IF place(0) = 1 THEN c = RGB(255, 210, 60) ELSE c = RGB(255, 255, 255)
   BigText pl$, 34, 14, 8, c
@@ -1238,16 +1620,18 @@ SUB Hud
   IF lp > LAPS THEN lp = LAPS
   BigText T$("LAP") + " " + LTRIM$(STR$(lp)) + "/" + LTRIM$(STR$(LAPS)), 70, 82, 3, RGB(255, 255, 255)
   Panel 14, 108, 110, 24: DRAWTEXT 26, 112, Clock$(racet), INK
-  ' the item
+  Disc 30, 154, 10, RGB(255, 210, 60), 1: DRAWTEXT 26, 147, "Z", RGB(200, 140, 20)
+  IF coins(0) >= 10 THEN c = RGB(255, 210, 60) ELSE c = RGB(255, 255, 255)
+  BigText "X" + LTRIM$(STR$(coins(0))), 66, 146, 2, c
+  IF gpOn THEN Panel 14, 176, 110, 20: DRAWTEXT 22, 178, "GP " + LTRIM$(STR$(gpRace)) + "/" + LTRIM$(STR$(NCIRC)), INK
+  ' the item (a roulette first)
   Panel 290, 8, 60, 52
-  IF item(0) THEN
+  IF roll(0) > 0 THEN
+    ItemIcon 1 + INT(roll(0) * 14) MOD 6, 320, 30
+  ELSEIF item(0) THEN
     a$ = itemName$(item(0))
-    SELECT CASE item(0)
-      CASE 1: Disc 320, 30, 12, RGB(255, 80, 80), 1: Disc 320, 30, 5, RGB(255, 210, 60), 1
-      CASE 2: Disc 320, 30, 13, RGB(255, 120, 200), .7: CIRCLE (315, 27), 3, RGB(255, 210, 235), , , , F
-      CASE 3: Disc 320, 30, 14, RGB(150, 225, 255), 1: CIRCLE (314, 24), 4, RGB(255, 255, 255), , , , F
-      CASE 4: Tri 308, 42, 320, 14, 332, 42, RGB(255, 160, 40): Tri 313, 42, 320, 26, 327, 42, RGB(255, 230, 80)
-    END SELECT
+    ItemIcon item(0), 320, 30
+    IF item(0) = 6 THEN DRAWTEXT 334, 42, LTRIM$(STR$(ammo(0))), INK
     DRAWTEXT 320 - LEN(a$) * 4, 64, a$, RGB(255, 255, 255)
   ELSE
     DRAWTEXT 316, 26, "?", RGB(180, 170, 200)
@@ -1266,16 +1650,27 @@ SUB Hud
   FOR a = 0 TO NSHIP - 2: FOR b = a + 1 TO NSHIP - 1
     IF place(order(b)) < place(order(a)) THEN SWAP order(a), order(b)
   NEXT: NEXT
+  Panel 566, 186, 64, 180
   FOR k = 0 TO NSHIP - 1
     n = order(k): y = 200 + k * 30
-    IF n = 0 THEN CIRCLE (604, y), 14, RGB(255, 210, 60), , , , F
-    IF spin(n) > 0 OR stuck(n) > 0 THEN md = 1 ELSE md = 0
-    Head pilot(n), 604, y + 1, 10, -1, md
-    DRAWTEXT 572, y - 6, LTRIM$(STR$(k + 1)), RGB(255, 255, 255)
+    IF n = 0 THEN LINE (566, y - 14)-(630, y + 14), RGB(255, 210, 60), BF
+    IF spin(n) > 0 OR stuck(n) > 0 OR fall(n) > 0 THEN md = 1 ELSE md = 0
+    PUT (600, y - 14), faceSp(pilot(n) * 2 + md), PSET
+    DRAWTEXT 576, y - 7, LTRIM$(STR$(k + 1)), INK
   NEXT
-  FOR n = 0 TO NSHIP - 1
-    IF powT(n) > .3 AND n = 0 THEN BigText pow$(n), 320, 200, 4, RGB(255, 240, 120)
-  NEXT
+  IF powT(0) > .3 THEN BigText pow$(0), 320, 200, 4, RGB(255, 240, 120)
+END SUB
+
+' An item's picture in the HUD, centred on (x, y)
+SUB ItemIcon (k, x, y)
+  SELECT CASE k
+    CASE 1: Disc x, y, 12, RGB(255, 80, 80), 1: Disc x, y, 5, RGB(255, 210, 60), 1
+    CASE 2: Disc x, y, 13, RGB(255, 120, 200), .7: CIRCLE (x - 5, y - 3), 3, RGB(255, 210, 235), , , , F
+    CASE 3: Disc x, y, 14, RGB(150, 225, 255), 1: CIRCLE (x - 6, y - 6), 4, RGB(255, 255, 255), , , , F
+    CASE 4: Tri x - 12, y + 12, x, y - 16, x + 12, y + 12, RGB(255, 160, 40): Tri x - 7, y + 12, x, y - 4, x + 7, y + 12, RGB(255, 230, 80)
+    CASE 5: Star x, y + 1, 16, RGB(255, 215, 50): PSET (x - 3, y), INK: PSET (x + 3, y), INK
+    CASE 6: Disc x - 9, y + 4, 6, RGB(255, 80, 80), 1: Disc x + 9, y + 4, 6, RGB(255, 80, 80), 1: Disc x, y - 6, 6, RGB(255, 80, 80), 1
+  END SELECT
 END SUB
 
 SUB MiniMap (x, y, r)
@@ -1341,9 +1736,13 @@ SUB Results
     n = order(k): y = 168 + k * 30
     IF n = 0 THEN LINE (164, y - 13)-(476, y + 13), RGB(255, 236, 160), BF
     DRAWTEXT 176, y - 8, LTRIM$(STR$(k + 1)) + ".", INK
-    Head pilot(n), 222, y + 1, 10, -1, 0
+    PUT (209, y - 14), faceSp(pilot(n) * 2), PSET
     DRAWTEXT 246, y - 8, pname$(pilot(n)), INK
-    DRAWTEXT 380, y - 8, Clock$(fintime(n)), INK
+    IF gpOn THEN
+      DRAWTEXT 350, y - 8, "+" + LTRIM$(STR$(points(k + 1))) + " = " + LTRIM$(STR$(gpPts(pilot(n)))), INK
+    ELSE
+      DRAWTEXT 380, y - 8, Clock$(fintime(n)), INK
+    END IF
   NEXT
   ' the stars: three for the first, two for the podium, one for the finish
   IF place(0) = 1 THEN ns = 3 ELSE IF place(0) <= 3 THEN ns = 2 ELSE ns = 1
@@ -1362,6 +1761,55 @@ SUB Star (x, y, r, c)
   NEXT
 END SUB
 
+' The end of a Grand Prix: the standings, a cup for the podium
+SUB CupScreen
+  FOR n = 0 TO 5: order(n) = n: NEXT
+  FOR a = 0 TO 4: FOR b = a + 1 TO 5
+    IF gpPts(order(b)) > gpPts(order(a)) THEN SWAP order(a), order(b)
+  NEXT: NEXT
+  rk = 1: FOR k = 0 TO 5: IF order(k) = mypilot THEN rk = k + 1
+  NEXT
+  CLS
+  LINE (0, 0)-(639, 479), tc(circ, 1), BF
+  Panel 140, 20, 360, 440
+  BigText "GRAND PRIX", 320, 34, 4, RGB(255, 160, 40)
+  IF rk <= 3 THEN
+    IF rk = 1 THEN c = RGB(255, 205, 50) ELSE IF rk = 2 THEN c = RGB(200, 210, 225) ELSE c = RGB(215, 140, 80)
+    ' the cup: handles, the bowl, the foot, a star
+    Disc 280, 118, 14, c, 1: Disc 360, 118, 14, c, 1
+    CIRCLE (280, 118), 7, RGB(255, 253, 248), , , , F: CIRCLE (360, 118), 7, RGB(255, 253, 248), , , , F
+    Disc 320, 120, 38, c, .9
+    LINE (282, 84)-(358, 112), c, BF: LINE (281, 82)-(359, 84), INK, BF
+    LINE (310, 150)-(330, 172), INK, BF: LINE (313, 150)-(327, 170), c, BF
+    LINE (290, 170)-(350, 186), INK, BF: LINE (292, 172)-(348, 184), RGB(150, 100, 230), BF
+    Star 320, 118, 16, RGB(255, 255, 255)
+    DRAWTEXT 316, 171, LTRIM$(STR$(rk)), RGB(255, 255, 255)
+  ELSE
+    Head mypilot, 320, 130, 40, -1, 1
+  END IF
+  FOR k = 0 TO 5
+    p = order(k): y = 230 + k * 32
+    IF p = mypilot THEN LINE (156, y - 14)-(484, y + 14), RGB(255, 236, 160), BF
+    DRAWTEXT 170, y - 8, LTRIM$(STR$(k + 1)) + ".", INK
+    Head p, 216, y + 1, 10, -1, 0
+    DRAWTEXT 240, y - 8, pname$(p), INK
+    DRAWTEXT 400, y - 8, LTRIM$(STR$(gpPts(p))) + " pts", INK
+  NEXT
+  a$ = T$("Enter: back to the title"): DRAWTEXT 320 - LEN(a$) * 4, 430, a$, INK
+  IF rk <= 3 THEN Sfx 10, 523, 0, 160, .2: Sfx 11, 659, 0, 160, .4: Sfx 12, 1046, 0, 160, .7
+  DO
+    k$ = INKEY$: p = PAD
+    IF k$ = CHR$(13) OR k$ = CHR$(27) OR k$ = " " OR ((p AND 16) <> 0 AND (padprev AND 16) = 0) THEN padprev = p: EXIT DO
+    padprev = p
+    SfxTick
+    PAUSE 20
+  LOOP
+  SoundsOff
+END SUB
+
+' ================================================================================================
+' The title: a race goes on by itself behind the menu
+' ================================================================================================
 ' ================================================================================================
 ' The title: a race goes on by itself behind the menu
 ' ================================================================================================
@@ -1370,7 +1818,7 @@ SUB TitleScreen
   mp0 = mypilot: mypilot = INT(RND * 6)
   SetupGrid
   mypilot = mp0
-  state = 2: racet = 0: menuSel = 2: paused = 0: vdist = 50
+  state = 2: racet = 0: menuSel = 4: paused = 0: vdist = 50
   last = TIMER
   DO
     now = TIMER: dt = now - last: last = now
@@ -1385,18 +1833,20 @@ SUB TitleScreen
     go = k$ = CHR$(13) OR k$ = " " OR ((p AND 16) <> 0 AND (padprev AND 16) = 0) OR ((p AND 8192) <> 0 AND (padprev AND 8192) = 0)
     padprev = p
     IF k$ = CHR$(27) THEN SoundsOff: CLS: END
-    IF up THEN menuSel = (menuSel + 3) MOD 4: Sfx 12, 700, 1, 90, .05
-    IF dn THEN menuSel = (menuSel + 1) MOD 4: Sfx 12, 700, 1, 90, .05
+    IF up THEN menuSel = (menuSel + 5) MOD 6: Sfx 12, 700, 1, 90, .05
+    IF dn THEN menuSel = (menuSel + 1) MOD 6: Sfx 12, 700, 1, 90, .05
     IF lf OR rt THEN
       d = 1: IF lf THEN d = -1
-      IF menuSel = 0 THEN mypilot = (mypilot + d + 6) MOD 6
-      IF menuSel = 1 THEN circ = (circ - 1 + d + NCIRC) MOD NCIRC + 1: BuildCircuit circ: SetupGrid: state = 2: racet = 0
+      IF menuSel = 0 THEN gpOn = NOT gpOn
+      IF menuSel = 1 THEN mypilot = (mypilot + d + 6) MOD 6
+      IF menuSel = 2 AND gpOn = 0 THEN circ = (circ - 1 + d + NCIRC) MOD NCIRC + 1: BuildCircuit circ: SetupGrid: state = 2: racet = 0
+      IF menuSel = 3 THEN klass = (klass + d + 3) MOD 3
       Sfx 12, 900, 1, 90, .05
     END IF
     IF go THEN
-      IF menuSel = 3 THEN SoundsOff: CLS: END
-      IF menuSel = 2 THEN EXIT DO
-      menuSel = 2
+      IF menuSel = 5 THEN SoundsOff: CLS: END
+      IF menuSel = 4 THEN EXIT DO
+      menuSel = 4
     END IF
     Controls
     Physics
@@ -1406,31 +1856,34 @@ SUB TitleScreen
     lead = 0
     FOR n = 1 TO NSHIP - 1: IF sd(n) > sd(lead) THEN lead = n
     NEXT
-    TrackAt sd(lead) - 10 + 3 * SIN(t * .3), 3 * SIN(t * .4), 4 + 1.2 * SIN(t * .23)
+    TrackAt sd(lead) - 10 + 3 * SIN(t * .3), 3 * SIN(t * .4), 4 + 1.2 * SIN(t * .23) + alt(lead) * .5
     cex = wx: cey = wy: cez = wz
     TrackAt sd(lead) + 6, lx(lead), .8
     ctx = wx: cty = wy: ctz = wz
     DrawWorld sd(lead) - 10
     ' the menu
-    BigText "ZOOMO!", 324, 34, 11, RGB(255, 160, 40)
-    Panel 170, 178, 300, 196
-    MenuLine 0, T$("PILOT"), pname$(mypilot)
-    MenuLine 1, T$("CIRCUIT"), T$(cname$(circ))
-    MenuLine 2, T$("START"), ""
-    MenuLine 3, T$("QUIT"), ""
-    Head mypilot, 200, 206, 14, -1, 0
+    BigText "ZOOMO!", 324, 26, 10, RGB(255, 160, 40)
+    Panel 160, 120, 320, 290
+    IF gpOn THEN a$ = T$("GRAND PRIX") ELSE a$ = T$("ONE RACE")
+    MenuLine 0, T$("MODE"), a$
+    MenuLine 1, T$("PILOT"), pname$(mypilot)
+    IF gpOn THEN a$ = T$("ALL THREE") ELSE a$ = T$(cname$(circ))
+    MenuLine 2, T$("CIRCUIT"), a$
+    MenuLine 3, T$("SPEED"), T$(className$(klass))
+    MenuLine 4, T$("START"), ""
+    MenuLine 5, T$("QUIT"), ""
+    Head mypilot, 190, 186, 13, -1, 0
     Panel 0, 430, 639, 46
     a$ = T$("Up/Down choose  Left/Right change  Enter play  Esc quit"): DRAWTEXT 320 - LEN(a$) * 4, 436, a$, INK
-    a$ = T$("Arrows steer  Down brake  Space use  P pause"): DRAWTEXT 320 - LEN(a$) * 4, 454, a$, INK
+    a$ = T$("Arrows steer  Shift/C drift  Down brake  Space use  P pause"): DRAWTEXT 320 - LEN(a$) * 4, 454, a$, INK
     SfxTick
-    PAUSE 1
   LOOP
   SoundsOff
 END SUB
 
 SUB MenuLine (k, a$, b$)
-  y = 194 + k * 44
-  IF menuSel = k THEN c = RGB(255, 160, 40): LINE (180, y - 8)-(460, y + 26), RGB(255, 236, 160), BF ELSE c = RGB(140, 130, 160)
+  y = 134 + k * 44
+  IF menuSel = k THEN c = RGB(255, 160, 40): LINE (170, y - 8)-(470, y + 26), RGB(255, 236, 160), BF ELSE c = RGB(140, 130, 160)
   IF b$ = "" THEN
     BigText a$, 320, y, 3, c
   ELSE
