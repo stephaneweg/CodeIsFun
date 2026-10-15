@@ -27,7 +27,7 @@ const T = {
 	rotate: ['Paused — screen turned', 'Pause — écran tourné'], ok: ['OK!', 'OK !'], howBtn: ['How to play', 'Comment jouer'],
 	howTo: ['Swipe or use the arrows to steer Drako. Eat the coins, avoid the walls and your own tail!',
 		'Glisse ou utilise les flèches pour guider Drako. Mange les pièces, évite les murs et ta propre queue !'],
-	lgCoin: ['Coin: +10, Drako grows', 'Pièce : +10, Drako grandit'], lgElixir: ['Elixir: +30, a rush (points x2)', 'Élixir : +30, un élan (points x2)'],
+	lgCoin: ['Coin: +10, Drako grows', 'Pièce : +10, Drako grandit'], lgElixir: ['Elixir: +30, a rush (points x2)', 'Élixir : +30, points x2'],
 	lgGem: ['Gem: +100', 'Gemme : +100'], lgShield: ['Shield: saves you from one crash', 'Bouclier : te sauve d\'un choc'],
 	lgFrost: ['Hourglass: slows the time', 'Sablier : ralentit le temps'], lgGoblin: ['Goblin: steals coins — gobble it! +50', 'Gobelin : vole les pièces — croque-le ! +50'],
 	lgCombo: ['Eat fast for a combo: up to x4!', 'Mange vite pour un combo : jusqu\'à x4 !'],
@@ -67,7 +67,7 @@ const P = {
 	gold: '#FFCC2E', goldLight: '#FFF09A', goldDark: '#D8930F', goldEdge: '#A8650A',
 	elixir: '#E04BD6', elixirLight: '#FF9CF5', elixirDark: '#8E1F9A', gem: '#8C7BFF', gemLight: '#C8BEFF', gemDark: '#4433B8',
 	ice: '#9BE3FF', iceDark: '#3B9BD0', danger: '#E8392E', textShadow: '#1E120A', goblin: '#7BCF3A', goblinDark: '#4E9A22' };
-const SKIN = { body: '#4CC94A', body2: '#43B841', belly: '#D8F27A', scale: '#2E8A2C', plate: '#FFB020', horn: '#FFF1C9' };
+const SKIN = { body: '#52CC4A', body2: '#2F9A32', light: '#A8EE7A', belly: '#D8F27A', scale: '#2A8A2C', plate: '#FFB020', plateDark: '#D9800C', wing: '#FFB020', horn: '#FFF1C9' };
 const FONT = '"Lilita One","Arial Black","Segoe UI Black",Impact,system-ui,sans-serif';
 const reduced = matchMedia ('(prefers-reduced-motion: reduce)').matches;
 const touch = matchMedia ('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -339,7 +339,7 @@ function bob (t, s) { return Math.sin (t * 4) * s * 0.05; }
 function drawCoin (c, x, y, s, t)
 {
 	shadow (c, x, y, s);
-	const sq = Math.max (0.15, Math.abs (Math.cos (t * 2.6))), r = s * 0.4, yy = y + bob (t, s);
+	const sq = Math.max (0.4, Math.abs (Math.cos (t * 2.6))), r = s * 0.4, yy = y + bob (t, s);
 	c.save (); c.translate (x, yy); c.scale (sq, 1);
 	circle (c, 0, 0, r); c.fillStyle = P.goldDark; c.fill (); c.lineWidth = OL / sq; c.strokeStyle = P.outline; c.stroke ();
 	circle (c, 0, -r * 0.06, r * 0.78); c.fillStyle = P.gold; c.fill ();
@@ -481,7 +481,7 @@ function newGame (mode, li, opts)
 		score: 0, coins: 0, eaten: 0, combo: 0, lastPick: -1e9, gemChain: false, mult: 1,
 		rush: 0, frost: 0, shield: 0, invul: 0, time: 0, acc: 0, steps: 0,
 		waiting: !opts.demo && !opts.ai, state: 'play', dieT: 0, winT: 0, popped: 0,
-		gobNext: 10000, gobOn: mode === 'level' ? li >= 2 : false, gobMax: mode === 'level' && li === 4 ? 2 : 1,
+		gobNext: mode === 'level' && li === 2 ? 15000 : 10000, gobOn: mode === 'level' ? li >= 2 : false, gobMax: mode === 'level' && li === 4 ? 2 : 1,
 		mouth: 0, blink: 0, blinkNext: 2000, eatT: 1e9, gulpT: 1e9, trail: [], newBest: false };
 	for (let y = 0; y < 21; y++) for (let x = 0; x < 15; x++)
 	{
@@ -544,6 +544,7 @@ function tick ()
 	if (G.frost > 0) t *= 1.5;
 	return t;
 }
+function comboWin () { return Math.max (3000, 20 * tick ()); }
 function multOf (c) { return c >= 10 ? 4 : c >= 6 ? 3 : c >= 3 ? 2 : 1; }
 
 function turn (d)
@@ -571,7 +572,7 @@ function step ()
 		{
 			if (G.invul <= 0)
 			{
-				G.shield = 0; G.invul = 1000; G.combo = 0; G.gemChain = false;
+				G.shield = 0; G.invul = 1000; G.combo = 0; G.mult = 1; G.gemChain = false;
 				shake (6, 200); Snd.play ('thud'); buzz ([40, 30, 40]);
 				banner (tr ('saved'), '#BFE6FF');
 				burst (px (nx), py (ny), 'hit', 10);
@@ -582,9 +583,11 @@ function step ()
 			G.from = G.snake.map ((c) => ({ x: c.x, y: c.y }));
 			return;
 		}
+		if (!G.grace && !G.ai) { G.grace = 1; G.from = G.snake.map ((c) => ({ x: c.x, y: c.y })); return; }	// (a late swipe forgiven once)
 		die (nx, ny);
 		return;
 	}
+	G.grace = 0;
 	G.from = G.snake.map ((c) => ({ x: c.x, y: c.y }));
 	G.snake.unshift ({ x: nx, y: ny });
 	if (G.pending > 0) G.pending--; else G.snake.pop ();
@@ -599,7 +602,7 @@ function step ()
 
 function pick (base, x, y, col)
 {
-	if (G.time - G.lastPick <= 3000) G.combo++; else { G.combo = 0; G.gemChain = false; }
+	if (G.time - G.lastPick <= comboWin ()) G.combo++; else { G.combo = 0; G.gemChain = false; }
 	G.lastPick = G.time;
 	const m = multOf (G.combo) * (G.rush > 0 ? 2 : 1);
 	if (multOf (G.combo) > G.mult && G.combo > 0) banner (tr ('combo', { n: multOf (G.combo) }), P.gold, true);
@@ -625,7 +628,7 @@ function eat (it)
 		if (G.mode === 'level' && G.coins >= G.lv.goal) { win (); return; }
 		spawn ('coin');
 		if (G.coins % 5 === 0 && Math.random () < 0.6) more ('elixir');
-		if (G.combo >= 5 && !G.gemChain) { G.gemChain = true; more ('gem'); }
+		if (G.combo >= 5 && !G.gemChain && G.items.length < 3) { G.gemChain = true; more ('gem'); }
 		else if (Math.random () < 0.04) more ('gem');
 		break;
 	case 'elixir': G.rush = 4000; burst (x, y, 'elixir', 14); Snd.play ('elixir'); buzz (25); banner (tr ('rush'), '#FFB3F7'); break;
@@ -726,7 +729,8 @@ function moveGoblins ()
 		gb.f = { x: gb.x, y: gb.y }; gb.moved = G.steps;
 		const pass = (x, y) => !G.obst[y * G.cols + x] && !gobAt (x, y);
 		let d;
-		if (gb.mode === 'hunt') d = bfs (gb.x, gb.y, (x, y) => { const i = itemAt (x, y); return i && i.type === 'coin'; }, (x, y) => pass (x, y) && !G.occ[y * G.cols + x]);
+		if (gb.avoid > 0) gb.avoid--;
+		if (gb.mode === 'hunt') d = bfs (gb.x, gb.y, (x, y) => { const i = itemAt (x, y); return i && i.type === 'coin'; }, (x, y) => pass (x, y) && (!gb.avoid || !G.occ[y * G.cols + x]));
 		else d = bfs (gb.x, gb.y, (x, y) => x === 0 || y === 0 || x === G.cols - 1 || y === G.rows - 1, (x, y) => pass (x, y) && !G.occ[y * G.cols + x]);
 		if (gb.mode === 'flee' && (gb.x === 0 || gb.y === 0 || gb.x === G.cols - 1 || gb.y === G.rows - 1))
 		{	// gone, with the coin
@@ -744,7 +748,7 @@ function moveGoblins ()
 		{
 			const hd = G.snake[0];
 			if (hd.x === X && hd.y === Y) { gb.x = X; gb.y = Y; eatGoblin (gb); continue; }
-			gb.stun = 1500; continue;
+			gb.stun = 1500; gb.avoid = 6; continue;
 		}
 		gb.x = X; gb.y = Y;
 		const it = itemAt (X, Y);
@@ -831,7 +835,7 @@ function update (ms)
 			if (ttl && G.time - it.born > ttl) { G.items.splice (i, 1); burst (px (it.x), py (it.y), 'ice', 6); }
 		}
 		if (G.gobOn && G.gobs.length < G.gobMax && G.time >= G.gobNext) { spawnGoblin (); G.gobNext = G.time + 8000; }
-		if (G.combo > 0 && G.time - G.lastPick > 3000) { G.combo = 0; G.mult = 1; G.gemChain = false; hud (); }
+		if (G.combo > 0 && G.time - G.lastPick > comboWin ()) { G.combo = 0; G.mult = 1; G.gemChain = false; hud (); }
 		G.acc += ms;
 		let guard = 0;
 		while (G.state === 'play' && G.acc >= tick () && guard++ < 5) { G.acc -= tick (); if (G.ai) think (); step (); }
@@ -910,7 +914,7 @@ function drawSnake (c, a, t)
 	const rad = (i) =>
 	{
 		const k = i / Math.max (1, n - 1);
-		let r = S * (0.46 - 0.27 * k * k);
+		let r = S * (0.48 - 0.29 * k * k);
 		const gi = G.gulpT / 40 * (1 / 0.28);	// the gulp bulge, one cell per 40 ms
 		if (G.gulpT < 2000) r *= 1 + 0.28 * Math.exp (-((i - gi) * (i - gi)) / 8);
 		r *= 1 + 0.04 * Math.sin (t * 4.2 - i * 0.35);
@@ -934,27 +938,53 @@ function drawSnake (c, a, t)
 		c.fillStyle = '#FFE14D'; ellipse (c, S * 0.18, 0, S * 0.18 * fl, S * 0.07); c.fill ();
 		c.restore ();
 	}
+	// the little wings, behind the body (two cells behind the head), flapping
+	const wi = Math.min (m - 1, 5);
+	if (m > 14 && !flash)
+	{
+		const p = pts[wi], q = pts[wi - 1], r = rad (wi), ang = Math.atan2 (q.y - p.y, q.x - p.x), fl = 0.78 + 0.22 * Math.sin (t * 13);
+		c.save (); c.translate (p.x, p.y); c.rotate (ang);
+		for (const s of [-1, 1])
+		{
+			const L = S * 0.72 * fl;
+			c.beginPath (); c.moveTo (r * 0.35, s * r * 0.5);
+			c.quadraticCurveTo (r * 0.3, s * (r + L * 0.7), -r * 0.2, s * (r + L));	// the leading bone, out to the tip
+			c.quadraticCurveTo (-r * 0.45, s * (r + L * 0.55), -r * 0.75, s * (r + L * 0.6));	// three scallops back to the body
+			c.quadraticCurveTo (-r * 0.85, s * (r + L * 0.2), -r * 1.15, s * (r + L * 0.25));
+			c.quadraticCurveTo (-r * 1.0, s * r * 0.7, -r * 0.6, s * r * 0.4); c.closePath ();
+			outlined (c, SKIN.wing, OL);
+			c.strokeStyle = SKIN.scale; c.lineWidth = Math.max (1, OL * 0.6); c.beginPath ();
+			c.moveTo (r * 0.1, s * r * 0.7); c.lineTo (-r * 0.6, s * (r + L * 0.45)); c.stroke ();
+		}
+		c.restore ();
+	}
 	// the outline: every circle one size bigger, in one colour (the silhouette)
 	c.fillStyle = P.outline;
 	for (let i = m - 1; i >= 1; i--) { circle (c, pts[i].x, pts[i].y, rad (i) + OL); c.fill (); }
-	for (let i = m - 1; i >= 1; i--)
+	// a round, shaded tube: the dark side, the body colour shifted to the light, a continuous gloss line
+	c.fillStyle = flash ? '#fff' : SKIN.body2;
+	for (let i = m - 1; i >= 1; i--) { circle (c, pts[i].x, pts[i].y, rad (i)); c.fill (); }
+	if (!flash)
 	{
-		const p = pts[i], r = rad (i), q = pts[i - 1];
-		c.fillStyle = flash ? '#fff' : (Math.floor (i / 2) % 2 ? SKIN.body : SKIN.body2); circle (c, p.x, p.y, r); c.fill ();
-		if (flash) continue;
-		c.fillStyle = SKIN.belly; ellipse (c, p.x + r * 0.08, p.y + r * 0.38, r * 0.62, r * 0.38); c.fill ();
-		const ang = Math.atan2 (q.y - p.y, q.x - p.x);
-		if (i % 3 === 0) { c.strokeStyle = SKIN.scale; c.lineWidth = Math.max (1, r * 0.13); c.beginPath (); c.arc (p.x, p.y, r * 0.5, ang + 2.3, ang + 3.98); c.stroke (); }
-		glossy (c, p.x - r * 0.3, p.y - r * 0.42, r * 0.34, r * 0.16, -0.5, 0.35);
-	}
-	// back plates, on top, along the path
-	if (!flash) for (let i = 4; i < m - 3; i += 4)
-	{
-		const p = pts[i], q = pts[i - 1], r = rad (i), ang = Math.atan2 (q.y - p.y, q.x - p.x);
-		c.save (); c.translate (p.x, p.y - r * 0.15); c.rotate (ang);
-		c.beginPath (); c.moveTo (r * 0.42, 0); c.lineTo (-r * 0.25, -r * 0.26); c.lineTo (-r * 0.12, 0); c.lineTo (-r * 0.25, r * 0.26); c.closePath ();
-		outlined (c, SKIN.plate, Math.max (1, OL * 0.6));
-		c.restore ();
+		c.fillStyle = SKIN.body;
+		for (let i = m - 1; i >= 1; i--) { const r = rad (i); circle (c, pts[i].x - r * 0.1, pts[i].y - r * 0.14, r * 0.84); c.fill (); }
+		c.strokeStyle = SKIN.light; c.lineCap = 'round'; c.lineJoin = 'round';	// the gloss, one continuous line
+		for (let i = m - 1; i >= 2; i--)
+		{
+			const r = rad (i), r2 = rad (i - 1); c.lineWidth = r * 0.5; c.beginPath ();
+			c.moveTo (pts[i].x - r * 0.24, pts[i].y - r * 0.34); c.lineTo (pts[i - 1].x - r2 * 0.24, pts[i - 1].y - r2 * 0.34); c.stroke ();
+		}
+		// the back plates: round, glossy scutes along the spine (not arrows), bigger near the head
+		for (let i = 3; i < m - 4; i += 4)
+		{
+			const p = pts[i], q = pts[i - 1], r = rad (i), ang = Math.atan2 (q.y - p.y, q.x - p.x);
+			c.save (); c.translate (p.x, p.y); c.rotate (ang);
+			ellipse (c, 0, 0, r * 0.4, r * 0.3); outlined (c, SKIN.plate, Math.max (1.2, OL * 0.7));
+			c.fillStyle = SKIN.plateDark; ellipse (c, -r * 0.06, r * 0.08, r * 0.28, r * 0.17); c.fill ();
+			c.fillStyle = SKIN.plate; ellipse (c, r * 0.02, -r * 0.03, r * 0.26, r * 0.17); c.fill ();
+			glossy (c, r * 0.08, -r * 0.12, r * 0.13, r * 0.07, 0, 0.75);
+			c.restore ();
+		}
 	}
 	// the head
 	const p = pts[0], q = pts[1] || { x: p.x - DX[G.dir], y: p.y - DY[G.dir] };
@@ -977,17 +1007,19 @@ function drawSnake (c, a, t)
 }
 function drawHead (c, x, y, ang, sx, sy, flash)
 {
-	const R = S * 0.56, mouth = G.mouth, blink = G.blink > 0 ? Math.sin (Math.PI * G.blink / 140) : 0;
+	const R = S * 0.66, mouth = G.mouth, blink = G.blink > 0 ? Math.sin (Math.PI * G.blink / 140) : 0;
 	c.save (); c.translate (x, y); c.rotate (ang); c.scale (sx, sy);
 	c.lineWidth = OL; c.strokeStyle = P.outline;
 	for (const s of [-1, 1])	// the horns
 	{
-		c.beginPath (); c.moveTo (-R * 0.3, s * R * 0.5); c.quadraticCurveTo (-R * 1.05, s * R * 1.05, -R * 1.15, s * R * 0.55);
-		c.lineTo (-R * 0.6, s * R * 0.25); c.closePath (); c.fillStyle = flash ? '#fff' : SKIN.horn; c.fill (); c.stroke ();
+		c.beginPath (); c.moveTo (-R * 0.1, s * R * 0.62); c.quadraticCurveTo (-R * 0.75, s * R * 1.25, -R * 1.25, s * R * 1.0);
+		c.quadraticCurveTo (-R * 0.95, s * R * 0.75, -R * 0.65, s * R * 0.3); c.closePath (); c.fillStyle = flash ? '#fff' : SKIN.horn; c.fill (); c.stroke ();
 	}
-	ellipse (c, 0, 0, R, R * 0.86); c.fillStyle = flash ? '#fff' : SKIN.body; c.fill (); c.stroke ();
+	ellipse (c, 0, 0, R, R * 0.86); c.fillStyle = flash ? '#fff' : SKIN.body2; c.fill (); c.stroke ();
 	if (!flash)
 	{
+		c.fillStyle = SKIN.body; ellipse (c, -R * 0.06, -R * 0.08, R * 0.9, R * 0.74); c.fill ();
+		c.fillStyle = SKIN.belly; ellipse (c, R * 0.6, 0, R * 0.36, R * 0.5); c.fill ();	// the muzzle
 		const jaw = mouth * 0.62;
 		if (mouth > 0.05)
 		{
@@ -1160,7 +1192,7 @@ function hudCombo ()
 {
 	const el = $('hudCombo'), m = G.mult * (G.rush > 0 ? 2 : 1);
 	el.classList.toggle ('on', m > 1 && G.state === 'play');
-	if (m > 1) { el.textContent = 'x' + m; el.style.setProperty ('--p', Math.max (0, 100 - (G.time - G.lastPick) / 30) + '%'); }
+	if (m > 1) { el.textContent = 'x' + m; el.style.setProperty ('--p', Math.max (0, 100 - 100 * (G.time - G.lastPick) / comboWin ()) + '%'); }
 }
 
 // ---- the screens -----------------------------------------------------------------------------------------------
@@ -1183,6 +1215,7 @@ function play (mode, li)
 {
 	Snd.init ();
 	newGame (mode, li, { ai: Q.has ('auto') });
+	if (document.activeElement) document.activeElement.blur ();
 	paused = false; shownScore = -1; hud ();
 	show ('play');
 	Snd.play ('ready');
@@ -1194,7 +1227,13 @@ function pause (note)
 	$('pauseNote').textContent = pauseNote;
 	show ('pause');
 }
-function resume () { if (!paused) return; paused = false; show ('play'); }
+function resume ()
+{
+	if (!paused) return;
+	paused = false; show ('play');
+	if (G.state === 'play' && !G.ai) { G.waiting = true; G.queue.length = 0; G.acc = 0; }	// (the finger comes back first)
+	if (document.activeElement) document.activeElement.blur ();
+}
 function menu () { paused = false; startDemo (); layout (); show ('title'); }
 function over ()
 {

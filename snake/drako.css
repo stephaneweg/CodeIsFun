@@ -12,7 +12,7 @@ html, body {
 	margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none;
 	user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
 }
-body { background: #4E8A2A radial-gradient(circle at 50% 30%, #8ED44E, #4E8A2A 75%); font-family: var(--font); color: #fff; }
+body { background: #4E8A2A radial-gradient(circle at 50% 30%, #8ED44E, #4E8A2A 75%); font-family: var(--font); font-weight: 800; color: #fff; }
 #app { position: fixed; inset: 0; }
 #cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #safe { position: fixed; top: var(--st); bottom: var(--sb); left: var(--sl); right: var(--sr); pointer-events: none; visibility: hidden; }
@@ -96,7 +96,7 @@ body { background: #4E8A2A radial-gradient(circle at 50% 30%, #8ED44E, #4E8A2A 7
 @keyframes slidein { from { opacity: 0; transform: translateY(30px); } }
 .screen.dim { background: rgba(20, 12, 4, .55); }
 .sheet { width: min(360px, 100%); display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-top: 40px; text-align: center; }
-.sheet p { margin: 0; font-size: 17px; line-height: 1.35; -webkit-text-stroke: .05em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol); }
+.sheet p { margin: 0; font-size: 18px; font-weight: 800; line-height: 1.32; letter-spacing: .01em; -webkit-text-stroke: .16em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol), 0 3px 0 var(--ol); }
 .row { display: flex; gap: 10px; justify-content: center; align-items: center; }
 .row .btn:not(.round) { flex: 1; }
 .note:empty { display: none; }
@@ -123,7 +123,7 @@ body { background: #4E8A2A radial-gradient(circle at 50% 30%, #8ED44E, #4E8A2A 7
 }
 .ribbon.tilt { transform: rotate(-4deg); margin-top: -6px; font-size: clamp(18px, 5.6vw, 26px); }
 .menu { width: min(340px, 100%); display: flex; flex-direction: column; gap: 14px; margin-bottom: 4px; }
-.back-site { color: #fff; font-size: 15px; -webkit-text-stroke: .05em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol); text-decoration: none; margin-bottom: 4px; }
+.back-site { color: #fff; font-size: 16px; font-weight: 800; -webkit-text-stroke: .14em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol); text-decoration: none; margin-bottom: 4px; }
 
 /* level map */
 #scrLevels { justify-content: flex-start; background: rgba(20, 40, 8, .35); }
@@ -135,27 +135,33 @@ body { background: #4E8A2A radial-gradient(circle at 50% 30%, #8ED44E, #4E8A2A 7
 .medal:nth-child(even) { align-self: flex-end; flex-direction: row-reverse; text-align: right; }
 .medal .disc {
 	width: 82px; height: 82px; border-radius: 50%; display: grid; place-items: center; flex: none;
-	font-size: 38px; -webkit-text-stroke: .08em var(--ol); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ol);
+	font-size: 40px; font-weight: 900; -webkit-text-stroke: .16em var(--ol); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ol);
 	border: 4px solid var(--ol); background: radial-gradient(circle at 35% 30%, #FFE9A8, var(--wood-l) 40%, var(--wood) 75%);
 	box-shadow: inset 0 -6px 0 var(--wood-d), 0 5px 0 var(--ol), 0 9px 14px rgba(0,0,0,.3); transition: transform .08s;
 }
 .medal:active .disc { transform: translateY(4px); }
-.medal .name { font-size: 19px; -webkit-text-stroke: .06em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol); }
-.medal .mini { display: flex; gap: 2px; margin-top: 3px; }
+.medal .name {
+	display: inline-block; font-size: 22px; font-weight: 900; line-height: 1.1; padding: 5px 12px 7px; white-space: nowrap;
+	border: 3px solid var(--ol); border-radius: 10px; color: #fff; -webkit-text-stroke: .14em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol);
+	background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 9px, rgba(0,0,0,.12) 9px 10px), linear-gradient(var(--wood-l), var(--wood));
+	box-shadow: inset 0 2px 0 rgba(255,255,255,.35), inset 0 -3px 0 var(--wood-d), 0 3px 0 var(--ol);
+}
+.medal .mini { display: flex; gap: 3px; margin-top: 5px; padding: 0 6px; }
 .medal:nth-child(even) .mini { justify-content: flex-end; }
-.medal .mini .star { width: 22px; }
+.medal .mini .star { width: 27px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); }
 .medal.locked .disc { background: radial-gradient(circle at 35% 30%, #D4D8DD, #8E959D 70%); box-shadow: inset 0 -6px 0 #5E656D, 0 5px 0 var(--ol); }
 .medal.locked .disc svg { width: 36px; height: 36px; }
-.medal.locked .name { opacity: .8; }
+.medal.locked .name { background: linear-gradient(#B5BDC6, #8E959D); box-shadow: inset 0 2px 0 rgba(255,255,255,.4), inset 0 -3px 0 #5E656D, 0 3px 0 var(--ol); }
 .medal.next .disc { animation: pulse 1.4s ease-in-out infinite; }
 
 /* how to play */
 .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; text-align: left; }
-.legend li { display: flex; align-items: center; gap: 10px; font-size: 16px; -webkit-text-stroke: .05em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol); }
-.legend canvas { width: 40px; height: 40px; flex: none; }
+.legend li { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 800; line-height: 1.2; -webkit-text-stroke: .16em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol), 0 3px 0 var(--ol); }
+.legend li:nth-child(odd) { background: rgba(60, 30, 10, .18); border-radius: 10px; }
+.legend canvas { width: 44px; height: 44px; flex: none; margin: 1px 2px; }
 
 /* settings */
-.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 20px; -webkit-text-stroke: .06em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol); cursor: pointer; }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 20px; font-weight: 900; -webkit-text-stroke: .14em var(--ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ol); cursor: pointer; }
 .toggle input { position: absolute; opacity: 0; pointer-events: none; }
 .toggle i { width: 64px; height: 34px; border-radius: 20px; border: 3px solid var(--ol); background: #6B4A2E; position: relative; flex: none; box-shadow: inset 0 3px 0 rgba(0,0,0,.3); transition: background .15s; }
 .toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--ol); background: linear-gradient(#fff, #C9CFD6); transition: transform .15s; }

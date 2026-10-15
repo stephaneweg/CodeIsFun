@@ -36,7 +36,7 @@ const ok = (c, m) => { console.log ((c ? 'ok   ' : 'FAIL ') + m); if (!c) fails+
 			// the AI plays village 1 to the end
 			await page.goto (url + '?lang=' + lang + '&level=1&auto'); await page.waitForTimeout (200);
 			let mid = false;
-			for (let i = 0; i < 90; i++)
+			for (let i = 0; i < 200; i++)
 			{
 				await page.waitForTimeout (500);
 				const s = await page.evaluate (() => ({ st: Drako.G.state, coins: Drako.G.coins, sc: Drako.screen }));
